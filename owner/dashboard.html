@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Dashboard — MAAHI PRODUCTS Owner Console</title>
+  <script>
+    (function () {
+      var AUTH_KEY = "maahi_owner_auth_token";
+      var hasHashToken = window.location.hash && (window.location.hash.indexOf("access_token=") !== -1 || window.location.hash.indexOf("error=") !== -1);
+      if (!sessionStorage.getItem(AUTH_KEY) && !localStorage.getItem(AUTH_KEY) && !hasHashToken) {
+        window.location.replace("login.html");
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  
+  <!-- File protocol warning if double-clicked locally -->
+  <p id="file-protocol-warning" class="file-protocol-warning" hidden>
+    <strong>Local Storage Warning:</strong> You opened this file directly from disk (<code>file://</code>). Browsers isolate local storage per file. For the shop and dashboard to share orders, run a local web server (e.g. <code>python -m http.server 8080</code>) and navigate to <code>http://localhost:8080/owner/dashboard.html</code>.
+  </p>
+
+  <div class="dashboard-layout">
+    
+    <!-- Left Sidebar Navigation -->
+    <aside class="sidebar" aria-label="Main Navigation">
+      <div class="sidebar-header">
+        <a class="sidebar-logo" href="../index.html">MAAHI<span> PRODUCTS</span></a>
+        <span class="sidebar-badge">Owner Console</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <a href="#overview" class="nav-item active" id="nav-overview">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+              </svg>
+              Overview
+            </a>
+          </li>
+          <li>
+            <a href="#orders" class="nav-item" id="nav-orders">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              Orders
+            </a>
+          </li>
+          <li>
+            <a href="#inventory" class="nav-item" id="nav-inventory">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              Inventory
+            </a>
+          </li>
+          <li>
+            <a href="#database" class="nav-item" id="nav-database">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+              </svg>
+              Database
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar" id="user-avatar">M</div>
+          <div class="user-details">
+            <span class="user-name" id="user-name">Maahi Admin</span>
+            <span class="user-role" id="user-role">Administrator</span>
+          </div>
+        </div>
+        <button type="button" class="btn-logout" id="btn-logout" title="Sign out from dashboard">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- TAB: Overview -->
+      <div id="tab-overview" class="dashboard-tab">
+        <header class="topbar">
+          <div class="topbar-left">
+            <h1>Dashboard Overview</h1>
+            <p class="topbar-subtitle">Real-time tracking of organic media sales and logistics.</p>
+          </div>
+          <div class="topbar-right">
+            <!-- Space for other potential quick actions -->
+          </div>
+        </header>
+
+        <!-- Metrics Summary Cards -->
+        <section class="metrics-grid" id="dash-stats" aria-label="Key Performance Indicators">
+          <!-- Rendered dynamically by javascript -->
+        </section>
+
+        <!-- Analytics Graph Panel -->
+        <section class="analytics-card">
+          <div class="card-header">
+            <div>
+              <h2>Order Activity &amp; Revenue Trends</h2>
+              <p>Visual sales tracking timeline across order batches.</p>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-dot dot-revenue"></span>Revenue</span>
+              <span class="legend-item"><span class="legend-dot dot-orders"></span>Orders</span>
+            </div>
+          </div>
+          <div class="chart-container" id="analytics-chart-container">
+            <!-- SVG Line Chart will be generated and injected here by JavaScript -->
+            <div class="chart-loading-placeholder" id="chart-placeholder">
+               No chart data available. Place some orders first!
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- TAB: Orders -->
+      <div id="tab-orders" class="dashboard-tab" style="display: none;">
+        <header class="topbar">
+          <div class="topbar-left">
+            <h1>Orders Management</h1>
+            <p class="topbar-subtitle">Track, filter, and update customer order fulfillment status.</p>
+          </div>
+          <div class="topbar-right" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn-primary" id="btn-export" title="Export orders data to JSON">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export JSON
+            </button>
+            <button type="button" class="btn-primary" id="btn-export-orders-excel" title="Export orders to Excel/CSV">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 00-2 2z" />
+              </svg>
+              Export Excel
+            </button>
+            <button type="button" class="btn-primary" id="btn-export-orders-pdf" title="Export orders to PDF">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Export PDF
+            </button>
+          </div>
+        </header>
+
+        <!-- Orders List Section -->
+        <section class="orders-section">
+          <div class="orders-section-header">
+            <h2>Order History</h2>
+            
+            <div class="filter-controls">
+              <div class="search-box">
+                <svg xmlns="http://www.w3.org/2000/svg" class="search-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="search" id="order-search" placeholder="Search ID, customer, email..." autocomplete="off">
+              </div>
+              <div class="select-box">
+                <select id="status-filter" aria-label="Filter by status">
+                  <option value="">All statuses</option>
+                  <option value="new">New</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Orders Table Card -->
+          <div class="table-card">
+            <div class="table-wrap">
+              <table class="orders-table" id="orders-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Order ID</th>
+                    <th scope="col">Date Placed</th>
+                    <th scope="col">Customer Info</th>
+                    <th scope="col">Order Value</th>
+                    <th scope="col">Fulfillment</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" style="text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-tbody">
+                  <!-- Rendered dynamically by javascript -->
+                </tbody>
+              </table>
+              
+              <div id="orders-empty" class="orders-empty" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 0.75rem; opacity: 0.6;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <p>No orders found matching the filter criteria.</p>
+                <small>Customers will appear here when they check out from the storefront.</small>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- TAB: Inventory -->
+      <div id="tab-inventory" class="dashboard-tab" style="display: none;">
+        <header class="topbar">
+          <div class="topbar-left">
+            <h1>Inventory Management</h1>
+            <p class="topbar-subtitle">Create new products, modify descriptions, and change prices.</p>
+          </div>
+          <div class="topbar-right" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn-primary" id="btn-export-inv-excel" title="Export inventory to Excel/CSV">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 00-2 2z" />
+              </svg>
+              Export Excel
+            </button>
+            <button type="button" class="btn-primary" id="btn-export-inv-pdf" title="Export inventory to PDF">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Export PDF
+            </button>
+            <button type="button" class="btn-primary" id="btn-add-product" title="Add a new product">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Product
+            </button>
+          </div>
+        </header>
+
+        <!-- Inventory List Section -->
+        <section class="inventory-section">
+          <div class="table-card">
+            <div class="table-wrap">
+              <table class="orders-table" id="inventory-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Product Info</th>
+                    <th scope="col">Product ID</th>
+                    <th scope="col">Base Price</th>
+                    <th scope="col">Unit Label</th>
+                    <th scope="col" style="text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="inventory-tbody">
+                  <!-- Rendered dynamically by javascript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- TAB: Database Settings -->
+      <div id="tab-database" class="dashboard-tab" style="display: none;">
+        <header class="topbar">
+          <div class="topbar-left">
+            <h1>Database Settings</h1>
+            <p class="topbar-subtitle">Connect your dashboard and storefront to a secure Supabase backend.</p>
+          </div>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; margin-top: 1rem;">
+          
+          <!-- Connection Settings Form -->
+          <section class="analytics-card" style="margin-bottom: 0;">
+            <div class="card-header">
+              <h2>Supabase Credentials</h2>
+            </div>
+            <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+              <div class="field">
+                <label for="db-url" style="display:block; font-weight:700; font-size:0.75rem; text-transform:uppercase; margin-bottom:0.4rem; color:var(--text);">Supabase Project URL</label>
+                <input type="url" id="db-url" placeholder="https://your-project.supabase.co" style="width:100%; padding:0.65rem 0.85rem; border:1px solid rgba(45, 106, 79, 0.22); border-radius:10px; background:var(--bg); font:inherit;">
+              </div>
+
+              <div class="field">
+                <label for="db-key" style="display:block; font-weight:700; font-size:0.75rem; text-transform:uppercase; margin-bottom:0.4rem; color:var(--text);">Supabase Anon Key</label>
+                <input type="password" id="db-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="width:100%; padding:0.65rem 0.85rem; border:1px solid rgba(45, 106, 79, 0.22); border-radius:10px; background:var(--bg); font:inherit;">
+              </div>
+
+              <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.25rem;">
+                <input type="checkbox" id="db-use-real-oauth" style="width:auto; height:auto; margin:0; cursor:pointer;">
+                <label for="db-use-real-oauth" style="font-size:0.82rem; font-weight:700; color:var(--accent); cursor:pointer; margin:0; text-transform:none; letter-spacing:0;">Enable Real Google OAuth redirect (requires Google provider configured in Supabase)</label>
+              </div>
+
+              <div class="field" style="border-top: 1px dashed rgba(45, 106, 79, 0.15); padding-top: 1rem; margin-top: 0.5rem;">
+                <label for="db-razorpay-key" style="display:block; font-weight:700; font-size:0.75rem; text-transform:uppercase; margin-bottom:0.4rem; color:var(--text);">Razorpay Key ID</label>
+                <input type="text" id="db-razorpay-key" placeholder="rzp_test_SyiE1HAylAQAEM" style="width:100%; padding:0.65rem 0.85rem; border:1px solid rgba(45, 106, 79, 0.22); border-radius:10px; background:var(--bg); font:inherit;">
+                <small style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.25rem;">Provide your Razorpay test or live Key ID. If left blank, the system defaults to <code>rzp_test_SyiE1HAylAQAEM</code>.</small>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.5rem; padding:0.75rem; border-radius:8px; background:var(--bg); border:1px solid rgba(45, 106, 79, 0.12);">
+                <div id="db-status-indicator" style="width:12px; height:12px; border-radius:50%; background:#cbd5e1; flex-shrink:0;"></div>
+                <div style="flex:1;">
+                  <strong style="display:block; font-size:0.85rem;" id="db-status-label">Disconnected</strong>
+                  <span style="font-size:0.75rem; color:var(--text-muted);" id="db-status-desc">Currently utilizing LocalStorage.</span>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:1rem; margin-top:0.5rem;">
+                <button type="button" class="btn-primary" id="btn-db-save" style="flex:1; justify-content:center;">Save &amp; Test Connection</button>
+                <button type="button" class="btn-logout" id="btn-db-sync" disabled style="flex:1; justify-content:center; border:1px solid rgba(45, 106, 79, 0.35); color:var(--accent); background:#fff;">Sync Catalog</button>
+              </div>
+
+              <p id="db-form-error" style="color:var(--red); font-size:0.85rem; font-weight:600; margin:0;" role="alert" hidden></p>
+              <p id="db-form-success" style="color:#067d17; font-size:0.85rem; font-weight:600; margin:0;" role="alert" hidden></p>
+            </div>
+          </section>
+
+          <!-- SQL Setup Instructions -->
+          <section class="analytics-card" style="margin-bottom: 0;">
+            <div class="card-header">
+              <h2>Database Setup Instructions</h2>
+            </div>
+            <div style="padding: 1.5rem; font-size: 0.88rem; line-height: 1.5; color: var(--text-muted);">
+              <p style="margin-top:0;">To initialize the database, execute the following SQL inside the <strong>SQL Editor</strong> on your Supabase Console:</p>
+              
+              <pre style="background:var(--bg); padding:0.85rem; border-radius:8px; font-family:monospace; font-size:0.78rem; color:var(--text); overflow-x:auto; max-height:220px; border:1px solid rgba(0,0,0,0.06); line-height:1.45; text-align: left;">
+-- Create products table
+create table public.products (
+  id text primary key,
+  title text not null,
+  price numeric not null,
+  unit_label text default 'item',
+  image text,
+  thumb text,
+  tag text,
+  description text,
+  features jsonb default '[]'::jsonb
+);
+
+-- Create orders table
+create table public.orders (
+  id text primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  status text default 'new'::text,
+  subtotal numeric not null,
+  lines jsonb default '[]'::jsonb,
+  customer jsonb not null
+);
+
+-- Enable public read/write
+alter table public.products enable row level security;
+alter table public.orders enable row level security;
+
+create policy "Allow public read access to products" on public.products for select using (true);
+create policy "Allow public write access to products" on public.products for all using (true);
+
+create policy "Allow public read access to orders" on public.orders for select using (true);
+create policy "Allow public write access to orders" on public.orders for all using (true);</pre>
+              <p style="margin-bottom:0; font-size:0.75rem; font-weight:600; color:var(--accent); margin-top:1rem;">⚠️ Important: Enabling public read/write policies ensures the client-side storefront and owner console can interact with tables directly without middleware.</p>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Slide-out side drawer for Order Details -->
+  <div class="drawer-overlay" id="drawer-overlay" aria-hidden="true"></div>
+  <aside class="order-drawer" id="order-drawer" aria-labelledby="drawer-title" aria-hidden="true">
+    <div class="drawer-header">
+      <div>
+        <span class="drawer-subtitle">Order Details</span>
+        <h2 id="drawer-title" class="drawer-title">GLC-XYZ123</h2>
+      </div>
+      <button type="button" class="drawer-close-btn" id="detail-close" aria-label="Close details drawer">×</button>
+    </div>
+    
+    <div class="drawer-body" id="detail-body">
+      <!-- Injected by JavaScript -->
+    </div>
+  </aside>
+
+  <!-- Slide-out side drawer for Product Management -->
+  <aside class="product-drawer" id="product-drawer" aria-labelledby="product-drawer-title" aria-hidden="true" style="display: none;">
+    <div class="drawer-header">
+      <div>
+        <span class="drawer-subtitle">Product Management</span>
+        <h2 id="product-drawer-title" class="drawer-title">Add New Product</h2>
+      </div>
+      <button type="button" class="drawer-close-btn" id="product-close" aria-label="Close details drawer">×</button>
+    </div>
+    
+    <form class="drawer-body" id="product-form" novalidate>
+      <div class="field" id="prod-id-field">
+        <label for="prod-id">Product ID / Code <span class="req">*</span></label>
+        <input type="text" id="prod-id" name="id" required placeholder="e.g. 5kg, growbags, premium-husk">
+        <small style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.25rem;">Unique lowercase code (letters, numbers, hyphens only).</small>
+      </div>
+      
+      <div class="field" style="margin-top: 1rem;">
+        <label for="prod-title">Product Title <span class="req">*</span></label>
+        <input type="text" id="prod-title" name="title" required placeholder="e.g. 5 kg cocopeat blocks">
+      </div>
+
+      <div class="field" style="margin-top: 1rem;">
+        <label for="prod-price">Price (₹) <span class="req">*</span></label>
+        <input type="number" id="prod-price" name="price" min="0" required placeholder="e.g. 220">
+      </div>
+
+      <div class="field" style="margin-top: 1rem;">
+        <label for="prod-unit">Unit Label <span class="req">*</span></label>
+        <input type="text" id="prod-unit" name="unitLabel" required placeholder="e.g. block, bag, kg">
+      </div>
+
+      <div class="field" style="margin-top: 1rem;">
+        <label for="prod-tag">Tag (Optional)</label>
+        <input type="text" id="prod-tag" name="tag" placeholder="e.g. Professional grade">
+      </div>
+
+      <div class="field" style="margin-top: 1rem;">
+        <label for="prod-desc">Description</label>
+        <textarea id="prod-desc" name="desc" rows="3" placeholder="Brief description of the product..."></textarea>
+      </div>
+
+      <div class="field" style="margin-top: 1rem;">
+        <label for="prod-features">Key Features / Bullet Points (One per line)</label>
+        <textarea id="prod-features" name="features" rows="4" placeholder="e.g. Expand up to 60-75 L&#10;Dimensions: 2 x 12 x 4.7″"></textarea>
+      </div>
+
+      <div class="field" style="margin-top: 1rem;">
+        <label for="prod-thumb">Thumbnail Style (Optional)</label>
+        <select id="prod-thumb" name="thumb" style="width:100%;">
+          <option value="">Default (Green Leaf)</option>
+          <option value="product-card-media--5kg">5kg Block Thumbnail</option>
+          <option value="product-card-media--650g">650g Block Thumbnail</option>
+          <option value="product-card-media--growbags">Grow bags Thumbnail</option>
+          <option value="product-card-media--husk">Coir husk block Thumbnail</option>
+        </select>
+      </div>
+
+      <div class="field" style="margin-top: 1rem;">
+        <label for="prod-image-file">Upload Product Photo</label>
+        <input type="file" id="prod-image-file" accept="image/*">
+        <small style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.25rem;">Choose a local image file to upload.</small>
+      </div>
+
+      <div class="field" style="margin-top: 1rem;">
+        <label for="prod-image-url">Or paste Photo URL</label>
+        <input type="url" id="prod-image-url" name="image" placeholder="https://example.com/photo.jpg">
+        <small style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.25rem;">Direct web link to an image.</small>
+      </div>
+
+      <div class="field" style="margin-top: 1rem;">
+        <label>Photo Preview</label>
+        <div id="prod-image-preview" style="width: 100%; height: 120px; border-radius: var(--radius-sm); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; background-size: cover; background-position: center; color: var(--text-muted); font-size: 0.85rem; background-repeat: no-repeat;">
+          No photo selected
+        </div>
+      </div>
+
+      <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+        <button type="submit" class="btn-primary" id="btn-save-product" style="flex: 1; justify-content: center;">Save Product</button>
+        <button type="button" class="btn-logout" id="btn-cancel-product" style="flex: 1; justify-content: center;">Cancel</button>
+      </div>
+      
+      <p class="form-error" id="product-form-error" role="alert" hidden style="margin-top: 1rem; color: var(--red); font-size: 0.85rem; font-weight:600;"></p>
+    </form>
+  </aside>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
+  <script src="../supabase.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

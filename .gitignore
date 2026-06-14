@@ -1,0 +1,10 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code
+.vscode/
+
+# Local configuration backups (if any)
+*local*
