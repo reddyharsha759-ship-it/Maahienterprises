@@ -40,9 +40,7 @@
   var successAlert = document.getElementById("login-success");
   var successMsg = document.getElementById("login-success-msg");
 
-  // Demo credentials
-  var demoCredentials = document.getElementById("demo-credentials");
-  var demoCredBody = document.getElementById("demo-credentials-body");
+
 
   // OAuth elements
   var oauthDivider = document.getElementById("oauth-divider");
@@ -204,8 +202,7 @@
       googleBtn.style.display = "";
       if (oauthModalSubtitle) oauthModalSubtitle.textContent = "to continue to Maahi Products";
 
-      // Demo creds
-      demoCredBody.innerHTML = '<p>Email: <code>consumer@gmail.com</code><br>Password: <code>consumer2026</code></p>';
+
 
     } else {
       // Admin mode
@@ -230,9 +227,7 @@
       googleBtn.style.display = "";
       if (oauthModalSubtitle) oauthModalSubtitle.textContent = "to continue to Maahi Owner Dashboard";
 
-      // Demo creds
-      demoCredBody.innerHTML = '<p style="margin-bottom: 0.5rem;"><strong>Admin Profile:</strong><br>Email: <code>admin@maahiproducts.com</code><br>Password: <code>maahi2026</code></p>' +
-        '<p><strong>Contractor Profile:</strong><br>Email: <code>contractor@maahiproducts.com</code><br>Password: <code>contractor2026</code></p>';
+
     }
   }
 
@@ -315,17 +310,12 @@
       setTimeout(function () {
         var userProfile = null;
 
-        // Demo user
-        if (email === "consumer@gmail.com" && password === "consumer2026") {
-          userProfile = { name: "Maahi Customer", email: "consumer@gmail.com", addresses: [] };
-        } else {
-          // Check registered local users
-          var users = getLocalUsers();
-          for (var i = 0; i < users.length; i++) {
-            if (users[i].email === email && users[i].password === password) {
-              userProfile = { name: users[i].name, email: users[i].email, addresses: users[i].addresses || [] };
-              break;
-            }
+        // Check registered local users
+        var users = getLocalUsers();
+        for (var i = 0; i < users.length; i++) {
+          if (users[i].email === email && users[i].password === password) {
+            userProfile = { name: users[i].name, email: users[i].email, addresses: users[i].addresses || [] };
+            break;
           }
         }
 
@@ -449,10 +439,11 @@
 
       setTimeout(function () {
         var userProfile = null;
-        if (email === "admin@maahiproducts.com" && password === "maahi2026") {
-          userProfile = { name: "Maahi Admin", role: "Administrator", email: "admin@maahiproducts.com" };
-        } else if (email === "contractor@maahiproducts.com" && password === "contractor2026") {
-          userProfile = { name: "Maahi Contractor", role: "Contractor", email: "contractor@maahiproducts.com" };
+        var config = window.MAAHI_CONFIG || {};
+        if (config.adminEmail && email === config.adminEmail && password === config.adminPassword) {
+          userProfile = { name: "Maahi Admin", role: "Administrator", email: config.adminEmail };
+        } else if (config.contractorEmail && email === config.contractorEmail && password === config.contractorPassword) {
+          userProfile = { name: "Maahi Contractor", role: "Contractor", email: config.contractorEmail };
         }
 
         if (userProfile) {

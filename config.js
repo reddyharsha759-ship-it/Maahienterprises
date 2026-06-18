@@ -11,5 +11,13 @@ window.MAAHI_CONFIG = {
 
   // Razorpay Key ID (e.g. "rzp_test_SyiE1HAylAQAEM" or "rzp_live_...")
   // If left blank, it will automatically default to the test credentials.
-  razorpayKeyId: ""
+  razorpayKeyId: "",
+
+  // Owner Dashboard Credentials
+  // Change these to secure email & password for admin/contractor access
+  adminEmail: "admin@maahiproducts.com",
+  adminPassword: "maahi2026",
+  contractorEmail: "contractor@maahiproducts.com",
+  contractorPassword: "contractor2026"
 };
+

@@ -112,12 +112,12 @@
 
       // Simulate a network authentication call (1 second)
       setTimeout(function () {
-        // Demo credentials validation
         var userProfile = null;
-        if (email === "admin@maahiproducts.com" && password === "maahi2026") {
-          userProfile = { name: "Maahi Admin", role: "Administrator", email: "admin@maahiproducts.com" };
-        } else if (email === "contractor@maahiproducts.com" && password === "contractor2026") {
-          userProfile = { name: "Maahi Contractor", role: "Contractor", email: "contractor@maahiproducts.com" };
+        var config = window.MAAHI_CONFIG || {};
+        if (config.adminEmail && email === config.adminEmail && password === config.adminPassword) {
+          userProfile = { name: "Maahi Admin", role: "Administrator", email: config.adminEmail };
+        } else if (config.contractorEmail && email === config.contractorEmail && password === config.contractorPassword) {
+          userProfile = { name: "Maahi Contractor", role: "Contractor", email: config.contractorEmail };
         }
 
         if (userProfile) {
