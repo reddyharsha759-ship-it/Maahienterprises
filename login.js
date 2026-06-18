@@ -502,15 +502,18 @@
     accountsList.style.display = "flex";
     if (customForm) customForm.style.display = "none";
 
+    var config = window.MAAHI_CONFIG || {};
+    var adminEmail = config.adminEmail || "admin@maahiproducts.com";
+    var contractorEmail = config.contractorEmail || "contractor@maahiproducts.com";
+
     var accounts;
     if (currentRole === "admin") {
       accounts = [
-        { name: "Maahi Admin", role: "Administrator", email: "admin@maahiproducts.com" },
-        { name: "Maahi Contractor", role: "Contractor", email: "contractor@maahiproducts.com" }
+        { name: "Maahi Admin", role: "Administrator", email: adminEmail },
+        { name: "Maahi Contractor", role: "Contractor", email: contractorEmail }
       ];
     } else {
       accounts = [
-        { name: "Maahi Customer", email: "consumer@gmail.com", addresses: [] },
         { name: "Harsh Vardhan", email: "harsh@gmail.com", addresses: [] },
         { name: "Guest Grower", email: "guest@gmail.com", addresses: [] }
       ];

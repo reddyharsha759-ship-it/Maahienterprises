@@ -186,9 +186,13 @@
     accountsList.style.display = "flex";
     if (customForm) customForm.style.display = "none";
     
+    var config = window.MAAHI_CONFIG || {};
+    var adminEmail = config.adminEmail || "admin@maahiproducts.com";
+    var contractorEmail = config.contractorEmail || "contractor@maahiproducts.com";
+
     var googleAccounts = [
-      { name: "Maahi Admin", role: "Administrator", email: "admin@maahiproducts.com" },
-      { name: "Maahi Contractor", role: "Contractor", email: "contractor@maahiproducts.com" }
+      { name: "Maahi Admin", role: "Administrator", email: adminEmail },
+      { name: "Maahi Contractor", role: "Contractor", email: contractorEmail }
     ];
 
     var html = "";
