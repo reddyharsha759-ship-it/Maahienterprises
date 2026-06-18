@@ -6,5 +6,8 @@ desktop.ini
 # VS Code
 .vscode/
 
+# JetBrains / IntelliJ / WebStorm IDEs
+.idea/
+
 # Local configuration backups (if any)
 *local*
