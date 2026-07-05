@@ -727,21 +727,43 @@
     window.maahiSupabase.getSession().then(function (res) {
       var session = res.data ? res.data.session : null;
       if (session && session.user) {
-        var user = {
-          name: session.user.user_metadata.full_name || session.user.email.split("@")[0],
-          email: session.user.email,
-          addresses: []
-        };
-        var oldProfile = null;
-        try {
-          var raw = localStorage.getItem(CONSUMER_KEY);
-          if (raw) oldProfile = JSON.parse(raw);
-        } catch(e) {}
-        if (oldProfile && oldProfile.email === user.email) {
-          user.addresses = oldProfile.addresses || [];
+        var email = session.user.email;
+        var config = window.MAAHI_CONFIG || {};
+        var adminEmail = config.adminEmail || "admin@maahiproducts.com";
+        var contractorEmail = config.contractorEmail || "contractor@maahiproducts.com";
+        
+        var isAdminUser = (email === adminEmail || email === contractorEmail);
+        
+        if (isAdminUser || currentRole === "admin") {
+          var role = "Contractor";
+          if (email === adminEmail) {
+            role = "Administrator";
+          }
+          var profile = {
+            name: session.user.user_metadata.full_name || email.split("@")[0],
+            role: role,
+            email: email
+          };
+          sessionStorage.setItem(AUTH_KEY, session.access_token);
+          sessionStorage.setItem("maahi_user_profile", JSON.stringify(profile));
+          window.location.href = "owner/dashboard.html";
+        } else {
+          var user = {
+            name: session.user.user_metadata.full_name || email.split("@")[0],
+            email: email,
+            addresses: []
+          };
+          var oldProfile = null;
+          try {
+            var raw = localStorage.getItem(CONSUMER_KEY);
+            if (raw) oldProfile = JSON.parse(raw);
+          } catch(e) {}
+          if (oldProfile && oldProfile.email === user.email) {
+            user.addresses = oldProfile.addresses || [];
+          }
+          localStorage.setItem(CONSUMER_KEY, JSON.stringify(user));
+          window.location.href = redirectUrl || "index.html";
         }
-        localStorage.setItem(CONSUMER_KEY, JSON.stringify(user));
-        window.location.href = redirectUrl || "index.html";
       }
     }).catch(function (err) {
       console.warn("Failed to retrieve session from Supabase:", err);
@@ -749,21 +771,43 @@
 
     window.maahiSupabase.onAuthStateChange(function (event, session) {
       if (session && session.user) {
-        var user = {
-          name: session.user.user_metadata.full_name || session.user.email.split("@")[0],
-          email: session.user.email,
-          addresses: []
-        };
-        var oldProfile = null;
-        try {
-          var raw = localStorage.getItem(CONSUMER_KEY);
-          if (raw) oldProfile = JSON.parse(raw);
-        } catch(e) {}
-        if (oldProfile && oldProfile.email === user.email) {
-          user.addresses = oldProfile.addresses || [];
+        var email = session.user.email;
+        var config = window.MAAHI_CONFIG || {};
+        var adminEmail = config.adminEmail || "admin@maahiproducts.com";
+        var contractorEmail = config.contractorEmail || "contractor@maahiproducts.com";
+        
+        var isAdminUser = (email === adminEmail || email === contractorEmail);
+        
+        if (isAdminUser || currentRole === "admin") {
+          var role = "Contractor";
+          if (email === adminEmail) {
+            role = "Administrator";
+          }
+          var profile = {
+            name: session.user.user_metadata.full_name || email.split("@")[0],
+            role: role,
+            email: email
+          };
+          sessionStorage.setItem(AUTH_KEY, session.access_token);
+          sessionStorage.setItem("maahi_user_profile", JSON.stringify(profile));
+          window.location.href = "owner/dashboard.html";
+        } else {
+          var user = {
+            name: session.user.user_metadata.full_name || email.split("@")[0],
+            email: email,
+            addresses: []
+          };
+          var oldProfile = null;
+          try {
+            var raw = localStorage.getItem(CONSUMER_KEY);
+            if (raw) oldProfile = JSON.parse(raw);
+          } catch(e) {}
+          if (oldProfile && oldProfile.email === user.email) {
+            user.addresses = oldProfile.addresses || [];
+          }
+          localStorage.setItem(CONSUMER_KEY, JSON.stringify(user));
+          window.location.href = redirectUrl || "index.html";
         }
-        localStorage.setItem(CONSUMER_KEY, JSON.stringify(user));
-        window.location.href = redirectUrl || "index.html";
       }
     });
   }

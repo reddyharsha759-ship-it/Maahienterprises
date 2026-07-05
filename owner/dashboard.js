@@ -1549,5 +1549,7 @@
   }
 
   // Initial load
+  refreshCatalogData();
   initRouter();
+  window.maahiDashInitialized = true;
 })();

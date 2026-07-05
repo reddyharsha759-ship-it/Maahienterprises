@@ -651,11 +651,11 @@
       html += '  <p style="font-size:0.9rem; color:var(--text-muted); margin: 0 0 0.5rem 0;">Sign in to save checkout information and track orders.</p>';
       html += '  <div class="field" style="display:flex; flex-direction:column; gap:0.35rem;">';
       html += '    <label for="cust-email" style="font-size: 0.8rem; font-weight:700; text-transform:uppercase; color:var(--accent);">Email Address</label>';
-      html += '    <input type="email" id="cust-email" name="email" required placeholder="consumer@gmail.com" style="width:100%; padding:0.65rem 0.85rem; border:1px solid rgba(45, 106, 79, 0.22); border-radius:10px; background:#fcfbf9; font:inherit;">';
+      html += '    <input type="email" id="cust-email" name="email" required placeholder="you@example.com" style="width:100%; padding:0.65rem 0.85rem; border:1px solid rgba(45, 106, 79, 0.22); border-radius:10px; background:#fcfbf9; font:inherit;">';
       html += '  </div>';
       html += '  <div class="field" style="display:flex; flex-direction:column; gap:0.35rem;">';
       html += '    <label for="cust-password" style="font-size: 0.8rem; font-weight:700; text-transform:uppercase; color:var(--accent);">Password</label>';
-      html += '    <input type="password" id="cust-password" name="password" required placeholder="consumer2026" style="width:100%; padding:0.65rem 0.85rem; border:1px solid rgba(45, 106, 79, 0.22); border-radius:10px; background:#fcfbf9; font:inherit;">';
+      html += '    <input type="password" id="cust-password" name="password" required placeholder="••••••••" style="width:100%; padding:0.65rem 0.85rem; border:1px solid rgba(45, 106, 79, 0.22); border-radius:10px; background:#fcfbf9; font:inherit;">';
       html += '  </div>';
       html += '  <button type="submit" class="btn btn-submit" style="background: var(--accent); color:#fff; border-color:var(--accent); font-weight:700; width:100%; margin-top:0.5rem; padding:0.75rem; border-radius:8px;">Sign In</button>';
 
@@ -674,12 +674,6 @@
       html += '    </svg>';
       html += '    Sign in with Google';
       html += '  </button>';
-
-      html += '  <div class="demo-credentials" style="background:#f0ebe3; padding:0.75rem; border-radius:8px; border:1px solid rgba(45, 106, 79, 0.12); font-size:0.82rem; margin-top: 0.5rem; color:var(--text-muted);">';
-      html += '    <p style="margin:0 0 0.25rem 0; font-weight:700; color:var(--accent);">Demo Customer Profile:</p>';
-      html += '    Email: <code>consumer@gmail.com</code><br>';
-      html += '    Password: <code>consumer2026</code>';
-      html += '  </div>';
       html += '  <p class="form-error" id="cust-login-error" role="alert" hidden style="color:#b91c1c; font-size:0.85rem; font-weight:600; margin:0;"></p>';
       html += '</form>';
       
@@ -1394,13 +1388,15 @@
 
       try {
         var rzp = new Razorpay(options);
-        rzp.on('payment.failed', function (resp) {
-          if (placeOrderBtn) {
-            placeOrderBtn.disabled = false;
-            placeOrderBtn.textContent = "Place your order";
-          }
-          showError("Payment failed: " + (resp.error ? resp.error.description : "Please try again."));
-        });
+        if (typeof rzp.on === "function") {
+          rzp.on('payment.failed', function (resp) {
+            if (placeOrderBtn) {
+              placeOrderBtn.disabled = false;
+              placeOrderBtn.textContent = "Place your order";
+            }
+            showError("Payment failed: " + (resp.error ? resp.error.description : "Please try again."));
+          });
+        }
         rzp.open();
       } catch (err) {
         if (placeOrderBtn) {
@@ -1445,7 +1441,7 @@
         p.features.forEach(function (feat) {
           featuresHtml += '<li>' + escapeHtml(feat) + '</li>';
         });
-        featuresHtml += '</ul>';
+        
       }
       
       card.innerHTML = 
@@ -1491,9 +1487,31 @@
     window.maahiSupabase.getSession().then(function (res) {
       var session = res.data ? res.data.session : null;
       if (session && session.user) {
+        var email = session.user.email;
+        var config = window.MAAHI_CONFIG || {};
+        var adminEmail = config.adminEmail || "admin@maahiproducts.com";
+        var contractorEmail = config.contractorEmail || "contractor@maahiproducts.com";
+        
+        if (email === adminEmail || email === contractorEmail) {
+          var role = "Contractor";
+          if (email === adminEmail) {
+            role = "Administrator";
+          }
+          var profile = {
+            name: session.user.user_metadata.full_name || email.split("@")[0],
+            role: role,
+            email: email
+          };
+          var AUTH_KEY = "maahi_owner_auth_token";
+          sessionStorage.setItem(AUTH_KEY, session.access_token);
+          sessionStorage.setItem("maahi_user_profile", JSON.stringify(profile));
+          window.location.href = "owner/dashboard.html";
+          return;
+        }
+
         var user = {
-          name: session.user.user_metadata.full_name || session.user.email.split("@")[0],
-          email: session.user.email,
+          name: session.user.user_metadata.full_name || email.split("@")[0],
+          email: email,
           addresses: []
         };
         var currentConsumer = getConsumer();
@@ -1511,9 +1529,31 @@
     // Listen to authentication changes
     window.maahiSupabase.onAuthStateChange(function (event, session) {
       if (session && session.user) {
+        var email = session.user.email;
+        var config = window.MAAHI_CONFIG || {};
+        var adminEmail = config.adminEmail || "admin@maahiproducts.com";
+        var contractorEmail = config.contractorEmail || "contractor@maahiproducts.com";
+        
+        if (email === adminEmail || email === contractorEmail) {
+          var role = "Contractor";
+          if (email === adminEmail) {
+            role = "Administrator";
+          }
+          var profile = {
+            name: session.user.user_metadata.full_name || email.split("@")[0],
+            role: role,
+            email: email
+          };
+          var AUTH_KEY = "maahi_owner_auth_token";
+          sessionStorage.setItem(AUTH_KEY, session.access_token);
+          sessionStorage.setItem("maahi_user_profile", JSON.stringify(profile));
+          window.location.href = "owner/dashboard.html";
+          return;
+        }
+
         var user = {
-          name: session.user.user_metadata.full_name || session.user.email.split("@")[0],
-          email: session.user.email,
+          name: session.user.user_metadata.full_name || email.split("@")[0],
+          email: email,
           addresses: []
         };
         var currentConsumer = getConsumer();
@@ -1541,4 +1581,5 @@
       console.warn("Failed to fetch catalog from Supabase on load:", err);
     });
   }
+  window.maahiInitialized = true;
 })();
