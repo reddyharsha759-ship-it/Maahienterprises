@@ -11,3 +11,6 @@ desktop.ini
 
 # Local configuration backups (if any)
 *local*
+
+# Dependencies
+node_modules/
