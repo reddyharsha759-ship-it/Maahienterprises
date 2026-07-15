@@ -706,7 +706,7 @@
         log(t, "Navigating to index.html...");
         await delay(1500); // Initial wait
         let retries = 15;
-        while (retries > 0 && (!iframe.contentWindow.maahiSupabase || !iframe.contentWindow.document.getElementById('product-search'))) {
+        while (retries > 0 && (!iframe.contentWindow.maahiSupabase || !iframe.contentWindow.maahiInitialized)) {
           await delay(200);
           retries--;
         }
@@ -767,7 +767,12 @@
         
         log(t, "Clicking 'Sign In' header button...");
         doc.getElementById('profile-open-btn').click();
-        await delay(1500);
+        await delay(1500); // Initial wait
+        let retries3 = 15;
+        while (retries3 > 0 && (!iframe.contentWindow.maahiLoginInitialized)) {
+          await delay(200);
+          retries3--;
+        }
 
         // Clicking profile-open-btn redirects directly to login.html if guest
         const loginDoc = iframe.contentDocument || iframe.contentWindow.document;
@@ -971,7 +976,12 @@
             log(t, `[Iframe Error] ${e.message} at ${e.filename}:${e.lineno}:${e.colno}`, 'error');
           });
         } catch(err) {}
-        await delay(1500);
+        await delay(1500); // Initial wait
+        let loginRetries = 15;
+        while (loginRetries > 0 && (!iframe.contentWindow.maahiLoginInitialized)) {
+          await delay(200);
+          loginRetries--;
+        }
 
         const loginDoc = iframe.contentDocument || iframe.contentWindow.document;
         assert(t, loginDoc.title.includes("Sign In"), "Redirected to unified Sign In page.", "Failed redirect to login page.");
@@ -994,7 +1004,7 @@
         } catch(err) {}
         await delay(3000); // Initial wait
         let retries7 = 15;
-        while (retries7 > 0 && (!iframe.contentWindow.maahiSupabase || !iframe.contentWindow.document.getElementById('inventory-tbody'))) {
+        while (retries7 > 0 && (!iframe.contentWindow.maahiDashInitialized)) {
           await delay(200);
           retries7--;
         }

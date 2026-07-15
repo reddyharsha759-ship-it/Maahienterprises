@@ -69,12 +69,27 @@
     currentRole = "admin";
   }
 
+  function performRedirect() {
+    var target = redirectUrl || "index.html";
+    if (target.indexOf("#") === 0) {
+      target = "index.html" + target;
+    }
+    window.location.href = target;
+  }
+
   // ================================================================
   // Session Check — redirect immediately if already logged in
   // ================================================================
   if (currentRole === "customer" && localStorage.getItem(CONSUMER_KEY)) {
-    window.location.href = redirectUrl || "index.html";
+    performRedirect();
     return;
+  }
+  var isTestMode = localStorage.getItem("maahi_test_mode") === "true";
+  if (!isTestMode) {
+    if (currentRole === "admin" && (sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY))) {
+      window.location.href = "owner/dashboard.html";
+      return;
+    }
   }
 
   // ================================================================
@@ -332,7 +347,7 @@
           }
 
           localStorage.setItem(CONSUMER_KEY, JSON.stringify(userProfile));
-          window.location.href = redirectUrl || "index.html";
+          performRedirect();
         } else {
           if (submitBtn) {
             submitBtn.classList.remove("is-loading");
@@ -401,7 +416,7 @@
         saveLocalUser({ name: name, email: email, password: password, addresses: [] });
         var userProfile = { name: name, email: email, addresses: [] };
         localStorage.setItem(CONSUMER_KEY, JSON.stringify(userProfile));
-        window.location.href = redirectUrl || "index.html";
+        performRedirect();
       }, 1000);
     });
   }
@@ -587,7 +602,7 @@
               localStorage.setItem(CONSUMER_KEY, JSON.stringify(selectedAcc));
               oauthModal.style.opacity = "0";
               oauthModal.style.pointerEvents = "none";
-              window.location.href = redirectUrl || "index.html";
+              performRedirect();
             }
           }, 800);
         }
@@ -683,12 +698,12 @@
               custAcc.addresses = oldProfile.addresses || [];
             }
 
-            localStorage.setItem(CONSUMER_KEY, JSON.stringify(custAcc));
-            if (oauthModal) {
-              oauthModal.style.opacity = "0";
-              oauthModal.style.pointerEvents = "none";
-            }
-            window.location.href = redirectUrl || "index.html";
+             localStorage.setItem(CONSUMER_KEY, JSON.stringify(custAcc));
+             if (oauthModal) {
+               oauthModal.style.opacity = "0";
+               oauthModal.style.pointerEvents = "none";
+             }
+             performRedirect();
           }
         }, 1000);
       });
@@ -762,7 +777,7 @@
             user.addresses = oldProfile.addresses || [];
           }
           localStorage.setItem(CONSUMER_KEY, JSON.stringify(user));
-          window.location.href = redirectUrl || "index.html";
+          performRedirect();
         }
       }
     }).catch(function (err) {
@@ -806,9 +821,10 @@
             user.addresses = oldProfile.addresses || [];
           }
           localStorage.setItem(CONSUMER_KEY, JSON.stringify(user));
-          window.location.href = redirectUrl || "index.html";
+          performRedirect();
         }
       }
     });
   }
+  window.maahiLoginInitialized = true;
 })();

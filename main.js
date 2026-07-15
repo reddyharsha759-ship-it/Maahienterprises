@@ -315,6 +315,7 @@
         currency: "INR",
       });
     }
+    renderCheckoutAuth();
   }
 
   function escapeHtml(s) {
@@ -1113,11 +1114,7 @@
       var btn = e.target.closest("[data-add]");
       if (!btn) return;
 
-      // Redirect to sign in page if not logged in
-      if (!getConsumer()) {
-        window.location.href = "login.html?redirect=" + encodeURIComponent("index.html#products");
-        return;
-      }
+
 
       var id = btn.getAttribute("data-add");
       var card = btn.closest(".product-card");
@@ -1441,7 +1438,7 @@
         p.features.forEach(function (feat) {
           featuresHtml += '<li>' + escapeHtml(feat) + '</li>';
         });
-        
+        featuresHtml += '</ul>';
       }
       
       card.innerHTML = 
