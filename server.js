@@ -31,41 +31,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Handle test results POST request
-  if (req.method === 'POST' && safeUrl === '/api/test-results') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk;
-    });
-    req.on('end', () => {
-      const resultsPath = path.join(__dirname, 'test-results.json');
-      fs.writeFile(resultsPath, body, 'utf8', (err) => {
-        if (err) {
-          console.error("Error writing test results file:", err);
-        }
-        console.log("\n=================== TEST RESULTS RECEIVED ===================");
-        try {
-          const resObj = JSON.parse(body);
-          console.log(`Summary: Passed: ${resObj.passed}, Failed: ${resObj.failed}`);
-          console.log("-------------------------------------------------------------");
-          console.log(resObj.logs.join('\n'));
-        } catch (parseErr) {
-          console.log("Failed to parse test results body:", parseErr.message);
-        }
-        console.log("=============================================================\n");
 
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
-
-        // Gracefully shut down the server
-        setTimeout(() => {
-          console.log("Shutting down test server...");
-          process.exit(0);
-        }, 1000);
-      });
-    });
-    return;
-  }
 
   const extname = String(path.extname(filePath)).toLowerCase();
   const contentType = MIME_TYPES[extname] || 'application/octet-stream';
@@ -88,8 +54,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\n==================================================`);
-  console.log(`MAAHI PRODUCTS Development & Test Server`);
+  console.log(`MAAHI PRODUCTS Development Server`);
   console.log(`Server running at: http://localhost:${PORT}/`);
-  console.log(`Test Suite running at: http://localhost:${PORT}/test-suite.html`);
   console.log(`==================================================\n`);
 });
