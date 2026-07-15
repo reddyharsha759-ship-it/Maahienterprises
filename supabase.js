@@ -78,7 +78,9 @@
       getSession: function () { return Promise.resolve({ data: { session: null } }); },
       onAuthStateChange: function (cb) {
         return { data: { subscription: { unsubscribe: function() {} } } };
-      }
+      },
+      isHealthy: function () { return true; },
+      hasChecked: function () { return true; }
     };
     return;
   }
@@ -99,13 +101,47 @@
     }
   }
 
+  var isConnectionHealthy = false;
+  var hasCheckedConnection = false;
+
+  function verifyConnection() {
+    if (!client) {
+      isConnectionHealthy = false;
+      hasCheckedConnection = true;
+      return;
+    }
+    client
+      .from("products")
+      .select("id")
+      .limit(1)
+      .then(function (res) {
+        if (res.error) {
+          var status = res.error.status;
+          if (status === 400 || status === 401 || status === 403 || status === 404 || res.error.code === "P0001" || res.error.message.indexOf("relation") !== -1) {
+            isConnectionHealthy = true;
+          } else {
+            isConnectionHealthy = false;
+          }
+        } else {
+          isConnectionHealthy = true;
+        }
+        hasCheckedConnection = true;
+      })
+      .catch(function () {
+        isConnectionHealthy = false;
+        hasCheckedConnection = true;
+      });
+  }
+
   // Initialize client on script load
   initClient();
+  verifyConnection();
 
   window.maahiSupabase = {
     // Re-initialize client if config changes
     reinit: function () {
       initClient();
+      verifyConnection();
       return client !== null;
     },
 
@@ -115,6 +151,14 @@
 
     isConnected: function () {
       return client !== null;
+    },
+
+    isHealthy: function () {
+      return isConnectionHealthy;
+    },
+
+    hasChecked: function () {
+      return hasCheckedConnection;
     },
 
     // Test a specific URL/Key combo

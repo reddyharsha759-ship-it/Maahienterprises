@@ -494,7 +494,7 @@
   // ================================================================
   function handleGoogleSignIn() {
     var useRealOAuth = (window.MAAHI_CONFIG && window.MAAHI_CONFIG.useRealGoogleOAuth) || (localStorage.getItem("maahi_use_real_google_oauth") === "true");
-    if (useRealOAuth && window.maahiSupabase && window.maahiSupabase.isConnected()) {
+    if (useRealOAuth && window.maahiSupabase && window.maahiSupabase.isConnected() && window.maahiSupabase.isHealthy()) {
       var target;
       if (currentRole === "admin") {
         target = window.location.origin + window.location.pathname.replace("login.html", "owner/dashboard.html");

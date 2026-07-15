@@ -156,10 +156,23 @@
     }
 
     if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
-      if (indicator) indicator.style.backgroundColor = "#067d17";
-      if (label) label.textContent = "Connected";
-      if (desc) desc.textContent = "Successfully connected to your Supabase project.";
-      if (syncBtn) syncBtn.disabled = false;
+      if (!window.maahiSupabase.hasChecked()) {
+        if (indicator) indicator.style.backgroundColor = "#eab308";
+        if (label) label.textContent = "Connecting...";
+        if (desc) desc.textContent = "Checking connection health...";
+        if (syncBtn) syncBtn.disabled = true;
+        setTimeout(updateDatabaseUI, 500);
+      } else if (window.maahiSupabase.isHealthy()) {
+        if (indicator) indicator.style.backgroundColor = "#067d17";
+        if (label) label.textContent = "Connected";
+        if (desc) desc.textContent = "Successfully connected to your Supabase project.";
+        if (syncBtn) syncBtn.disabled = false;
+      } else {
+        if (indicator) indicator.style.backgroundColor = "#ef4444";
+        if (label) label.textContent = "Error";
+        if (desc) desc.textContent = "Unreachable or invalid Supabase project URL/Key.";
+        if (syncBtn) syncBtn.disabled = true;
+      }
     } else {
       if (indicator) indicator.style.backgroundColor = "#cbd5e1";
       if (label) label.textContent = "Disconnected";

@@ -460,7 +460,7 @@
 
   function handleGoogleSignIn() {
     var useRealOAuth = (window.MAAHI_CONFIG && window.MAAHI_CONFIG.useRealGoogleOAuth) || (localStorage.getItem("maahi_use_real_google_oauth") === "true");
-    if (useRealOAuth && window.maahiSupabase && window.maahiSupabase.isConnected()) {
+    if (useRealOAuth && window.maahiSupabase && window.maahiSupabase.isConnected() && window.maahiSupabase.isHealthy()) {
       window.maahiSupabase.signInWithGoogle(window.location.origin + window.location.pathname)
         .catch(function (err) {
           console.warn("Supabase Google Auth redirect failed, using simulation:", err);
