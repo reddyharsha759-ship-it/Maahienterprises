@@ -632,58 +632,7 @@ body {
   margin-top: 2px;
 }
 
-/* ============================================
-   DEMO CREDENTIALS
-   ============================================ */
-.demo-credentials {
-  margin-top: 1.5rem;
-  background-color: #fdfaf2;
-  border: 1px solid rgba(201, 162, 39, 0.25);
-  border-radius: 8px;
-  padding: 0.85rem 1rem;
-  font-size: 0.85rem;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
 
-.login-card.is-admin .demo-credentials {
-  background-color: #f0f4fa;
-  border-color: rgba(30, 58, 95, 0.2);
-}
-
-.demo-credentials-title {
-  font-weight: 700;
-  color: var(--gold);
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
-  margin: 0 0 0.35rem 0;
-  transition: color 0.3s ease;
-}
-
-.login-card.is-admin .demo-credentials-title {
-  color: var(--admin-accent);
-}
-
-.demo-credentials p {
-  margin: 0;
-  color: var(--text-muted);
-  line-height: 1.45;
-}
-
-.demo-credentials code {
-  background-color: rgba(201, 162, 39, 0.1);
-  padding: 0.1rem 0.3rem;
-  border-radius: 4px;
-  font-family: ui-monospace, monospace;
-  font-size: 0.9em;
-  color: #a47c17;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.login-card.is-admin .demo-credentials code {
-  background-color: rgba(30, 58, 95, 0.08);
-  color: var(--admin-accent);
-}
 
 .back-to-shop {
   text-align: center;

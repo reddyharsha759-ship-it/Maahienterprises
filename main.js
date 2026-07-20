@@ -459,141 +459,16 @@
   }
 
   function handleGoogleSignIn() {
-    var useRealOAuth = (window.MAAHI_CONFIG && window.MAAHI_CONFIG.useRealGoogleOAuth) || (localStorage.getItem("maahi_use_real_google_oauth") === "true");
-    if (useRealOAuth && window.maahiSupabase && window.maahiSupabase.isConnected() && window.maahiSupabase.isHealthy()) {
+    if (window.maahiSupabase && window.maahiSupabase.isConnected() && window.maahiSupabase.isHealthy()) {
       window.maahiSupabase.signInWithGoogle(window.location.origin + window.location.pathname)
         .catch(function (err) {
-          console.warn("Supabase Google Auth redirect failed, using simulation:", err);
-          openSimulatedGoogleOAuthModal();
+          console.error("Google OAuth redirect failed:", err);
+          alert("Google Sign-In failed. Please try again or contact support.");
         });
     } else {
-      openSimulatedGoogleOAuthModal();
+      alert("Sign-In is currently unavailable because the backend is disconnected.");
     }
   }
-
-  function openSimulatedGoogleOAuthModal() {
-    var oauthModal = document.getElementById("google-oauth-modal");
-    var accountsList = document.getElementById("google-accounts-list");
-    var customForm = document.getElementById("google-custom-account-form");
-    
-    if (!oauthModal || !accountsList) return;
-    
-    accountsList.style.display = "flex";
-    if (customForm) customForm.style.display = "none";
-    
-    var googleCustomers = [
-      { name: "Maahi Customer", email: "consumer@gmail.com", addresses: [] },
-      { name: "Harsh Vardhan", email: "harsh@gmail.com", addresses: [] },
-      { name: "Guest Grower", email: "guest@gmail.com", addresses: [] }
-    ];
-
-    var html = "";
-    googleCustomers.forEach(function (acc) {
-      var initial = acc.name.charAt(0).toUpperCase();
-      html += '<div class="google-customer-row" data-email="' + acc.email + '" style="display:flex; align-items:center; gap:0.75rem; padding:0.75rem 0.5rem; cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background 0.15s ease;">';
-      html += '  <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, var(--accent), var(--gold)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.95rem;">' + initial + '</div>';
-      html += '  <div style="flex:1; min-width:0; text-align:left;">';
-      html += '    <strong style="display:block; font-size:0.88rem; color:#3c4043; line-height:1.2;">' + acc.name + '</strong>';
-      html += '    <span style="font-size:0.78rem; color:#5f6368; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + acc.email + '</span>';
-      html += '  </div>';
-      html += '</div>';
-    });
-
-    html += '<div id="btn-google-use-another" style="display:flex; align-items:center; gap:0.75rem; padding:0.75rem 0.5rem; cursor:pointer; transition:background 0.15s ease; color:#1a73e8; font-weight:600; font-size:0.88rem; border-top:1px solid #dadce0;">';
-    html += '  <div style="width:32px; height:32px; border-radius:50%; border:1px solid #dadce0; display:flex; align-items:center; justify-content:center; font-size:1.2rem; color:#5f6368; background:#fff;">+</div>';
-    html += '  <span>Use another account</span>';
-    html += '</div>';
-
-    accountsList.innerHTML = html;
-
-    var rows = accountsList.querySelectorAll(".google-customer-row");
-    rows.forEach(function (row) {
-      row.addEventListener("mouseenter", function () { row.style.background = "#f8f9fa"; });
-      row.addEventListener("mouseleave", function () { row.style.background = "transparent"; });
-      row.addEventListener("click", function () {
-        var email = row.getAttribute("data-email");
-        var selectedAcc = googleCustomers.filter(function (a) { return a.email === email; })[0];
-        if (selectedAcc) {
-          row.style.opacity = "0.5";
-          row.style.pointerEvents = "none";
-          setTimeout(function () {
-            setConsumer(selectedAcc);
-            oauthModal.style.opacity = "0";
-            oauthModal.style.pointerEvents = "none";
-            refreshAll();
-            renderProfile();
-          }, 800);
-        }
-      });
-    });
-
-    var useAnotherBtn = accountsList.querySelector("#btn-google-use-another");
-    if (useAnotherBtn && customForm) {
-      useAnotherBtn.addEventListener("mouseenter", function () { useAnotherBtn.style.background = "#f8f9fa"; });
-      useAnotherBtn.addEventListener("mouseleave", function () { useAnotherBtn.style.background = "transparent"; });
-      useAnotherBtn.addEventListener("click", function () {
-        accountsList.style.display = "none";
-        customForm.style.display = "flex";
-        var nameInp = document.getElementById("google-custom-name");
-        var emailInp = document.getElementById("google-custom-email");
-        if (nameInp) nameInp.value = "";
-        if (emailInp) emailInp.value = "";
-      });
-    }
-
-    oauthModal.style.opacity = "1";
-    oauthModal.style.pointerEvents = "auto";
-  }
-
-  // Bind Google simulated custom account form buttons
-  (function () {
-    var submitBtn = document.getElementById("btn-google-custom-submit");
-    var backBtn = document.getElementById("btn-google-custom-back");
-    var oauthModal = document.getElementById("google-oauth-modal");
-    var accountsList = document.getElementById("google-accounts-list");
-    var customForm = document.getElementById("google-custom-account-form");
-
-    if (submitBtn) {
-      submitBtn.addEventListener("click", function () {
-        var nameInp = document.getElementById("google-custom-name");
-        var emailInp = document.getElementById("google-custom-email");
-        var name = nameInp ? nameInp.value.trim() : "";
-        var email = emailInp ? emailInp.value.trim() : "";
-        
-        if (!name || !email) {
-          alert("Please fill in both name and email.");
-          return;
-        }
-        if (email.indexOf("@") === -1) {
-          alert("Please enter a valid email address.");
-          return;
-        }
-        
-        var newAcc = { name: name, email: email, addresses: [] };
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Signing In...";
-        
-        setTimeout(function () {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Sign In";
-          setConsumer(newAcc);
-          if (oauthModal) {
-            oauthModal.style.opacity = "0";
-            oauthModal.style.pointerEvents = "none";
-          }
-          refreshAll();
-          renderProfile();
-        }, 1000);
-      });
-    }
-
-    if (backBtn && accountsList && customForm) {
-      backBtn.addEventListener("click", function () {
-        customForm.style.display = "none";
-        accountsList.style.display = "flex";
-      });
-    }
-  })();
 
   function renderCheckoutAuth() {
     var authSection = document.getElementById("checkout-auth-section");
@@ -698,8 +573,22 @@
           return;
         }
         
-        if (email === "consumer@gmail.com" && password === "consumer2026") {
-          var customerProfile = { name: "Maahi Customer", email: "consumer@gmail.com", addresses: [] };
+        var users = [];
+        try {
+          var raw = localStorage.getItem("maahi_local_users");
+          if (raw) users = JSON.parse(raw);
+        } catch(e) {}
+        if (!Array.isArray(users)) users = [];
+        
+        var customerProfile = null;
+        for (var i = 0; i < users.length; i++) {
+          if (users[i].email === email && users[i].password === password) {
+            customerProfile = { name: users[i].name, email: users[i].email, addresses: users[i].addresses || [] };
+            break;
+          }
+        }
+
+        if (customerProfile) {
           setConsumer(customerProfile);
           renderProfile();
         } else {
@@ -713,28 +602,6 @@
       var custGoogleBtn = profileBody.querySelector("#btn-cust-google-login");
       if (custGoogleBtn) {
         custGoogleBtn.addEventListener("click", handleGoogleSignIn);
-      }
-
-      var oauthModal = document.getElementById("google-oauth-modal");
-      var oauthClose = document.getElementById("oauth-close");
-      
-      if (oauthClose) {
-        oauthClose.addEventListener("click", function (e) {
-          e.preventDefault();
-          if (oauthModal) {
-            oauthModal.style.opacity = "0";
-            oauthModal.style.pointerEvents = "none";
-          }
-        });
-      }
-
-      if (oauthModal) {
-        oauthModal.addEventListener("click", function (e) {
-          if (e.target === oauthModal) {
-            oauthModal.style.opacity = "0";
-            oauthModal.style.pointerEvents = "none";
-          }
-        });
       }
     } else {
       if (profileViewState === "main") {

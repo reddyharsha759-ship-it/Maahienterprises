@@ -433,51 +433,7 @@
     <div class="cart-drawer-body" id="profile-drawer-body"></div>
   </aside>
 
-  <!-- Simulated Google OAuth Modal -->
-  <div id="google-oauth-modal" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:3000; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.2s ease;">
-    <div style="background:#fff; width:min(90%, 400px); border-radius:8px; box-shadow:0 4px 24px rgba(0,0,0,0.25); padding:2rem; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-sizing:border-box; color: #202124; text-align: left;">
-      <div style="text-align:center; margin-bottom:1.5rem;">
-        <svg width="24" height="24" viewBox="0 0 24 24" style="margin-bottom:0.5rem; display:inline-block;">
-          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69c-.29 1.5-.1.14-.1.14 0 0-.29.89-.9 1.5l2.76 2.13c1.61-1.49 2.54-3.69 2.54-6.46z"/>
-          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.83-2.97c-1.08.72-2.47 1.15-4.1 1.15-3.15 0-5.81-2.13-6.76-5.01L1.24 16.92C3.21 21.14 7.27 24 12 24z"/>
-          <path fill="#FBBC05" d="M5.24 14.26c-.25-.75-.39-1.56-.39-2.4s.14-1.65.39-2.4L1.24 6.34C.45 7.92 0 9.7 0 11.86s.45 3.94 1.24 5.52l4-3.12z"/>
-          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.27 0 3.21 2.86 1.24 7.08l4 3.12c.95-2.88 3.61-5.45 6.76-5.45z"/>
-        </svg>
-        <h2 style="margin:0; font-size:1.4rem; font-weight:400; color:#202124;">Choose an account</h2>
-        <p style="margin:0.25rem 0 0 0; font-size:0.9rem; color:#5f6368;">to continue to Maahi Products</p>
-      </div>
-      
-      <div id="google-accounts-list" style="display:flex; flex-direction:column; border-top:1px solid #dadce0; border-bottom:1px solid #dadce0; margin-bottom:1.5rem; max-height:240px; overflow-y:auto; padding: 0.5rem 0;">
-        <!-- List items populated dynamically by main.js -->
-      </div>
-      
-      <!-- Custom account entry form, hidden by default -->
-      <div id="google-custom-account-form" style="display:none; flex-direction:column; gap:0.75rem; border-top:1px solid #dadce0; border-bottom:1px solid #dadce0; margin-bottom:1.5rem; padding: 1rem 0;">
-        <div style="display:flex; flex-direction:column; gap:0.25rem;">
-          <label for="google-custom-name" style="font-size:0.75rem; font-weight:600; color:#5f6368;">Full Name</label>
-          <input type="text" id="google-custom-name" placeholder="John Doe" style="padding:0.5rem; border:1px solid #dadce0; border-radius:4px; font-size:0.88rem; outline:none; font-family:inherit;">
-        </div>
-        <div style="display:flex; flex-direction:column; gap:0.25rem;">
-          <label for="google-custom-email" style="font-size:0.75rem; font-weight:600; color:#5f6368;">Email Address</label>
-          <input type="email" id="google-custom-email" placeholder="john.doe@gmail.com" style="padding:0.5rem; border:1px solid #dadce0; border-radius:4px; font-size:0.88rem; outline:none; font-family:inherit;">
-        </div>
-        <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
-          <button type="button" id="btn-google-custom-submit" style="background:#1a73e8; color:#fff; border:none; padding:0.5rem 1rem; border-radius:4px; font-size:0.85rem; font-weight:600; cursor:pointer; font-family:inherit;">Sign In</button>
-          <button type="button" id="btn-google-custom-back" style="background:none; border:1px solid #dadce0; color:#1a73e8; padding:0.5rem 1rem; border-radius:4px; font-size:0.85rem; font-weight:600; cursor:pointer; font-family:inherit;">Back</button>
-        </div>
-      </div>
 
-      
-      <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.75rem; color:#757575;">
-        <span>English (United States)</span>
-        <div style="display:flex; gap:0.75rem;">
-          <a href="#" id="oauth-close" style="color:inherit; text-decoration:underline;">Cancel</a>
-          <a href="#" style="color:inherit; text-decoration:none;">Privacy</a>
-          <a href="#" style="color:inherit; text-decoration:none;">Terms</a>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

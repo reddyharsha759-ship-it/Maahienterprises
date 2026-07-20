@@ -84,12 +84,9 @@
     performRedirect();
     return;
   }
-  var isTestMode = localStorage.getItem("maahi_test_mode") === "true";
-  if (!isTestMode) {
-    if (currentRole === "admin" && (sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY))) {
-      window.location.href = "owner/dashboard.html";
-      return;
-    }
+  if (currentRole === "admin" && (sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY))) {
+    window.location.href = "owner/dashboard.html";
+    return;
   }
 
   // ================================================================
@@ -176,13 +173,13 @@
   if (forgotLink) {
     forgotLink.addEventListener("click", function (e) {
       e.preventDefault();
-      showError("Password reset is disabled for this local demo. Please use the credentials provided.");
+      showError("Password reset is currently unavailable. Please contact support.");
     });
   }
   if (adminForgotLink) {
     adminForgotLink.addEventListener("click", function (e) {
       e.preventDefault();
-      showError("Password reset is disabled for the local demo. Please use the credentials listed below.");
+      showError("Password reset is currently unavailable. Please contact the administrator.");
     });
   }
 
@@ -462,7 +459,7 @@
         }
 
         if (userProfile) {
-          var token = "maahi_demo_token_" + Math.random().toString(36).substring(2);
+          var token = "maahi_session_token_" + Math.random().toString(36).substring(2);
           var remember = rememberCheckbox ? rememberCheckbox.checked : false;
 
           if (remember) {
@@ -490,11 +487,10 @@
   }
 
   // ================================================================
-  // GOOGLE SIGN-IN (simulated)
+  // GOOGLE SIGN-IN
   // ================================================================
   function handleGoogleSignIn() {
-    var useRealOAuth = (window.MAAHI_CONFIG && window.MAAHI_CONFIG.useRealGoogleOAuth) || (localStorage.getItem("maahi_use_real_google_oauth") === "true");
-    if (useRealOAuth && window.maahiSupabase && window.maahiSupabase.isConnected() && window.maahiSupabase.isHealthy()) {
+    if (window.maahiSupabase && window.maahiSupabase.isConnected() && window.maahiSupabase.isHealthy()) {
       var target;
       if (currentRole === "admin") {
         target = window.location.origin + window.location.pathname.replace("login.html", "owner/dashboard.html");
@@ -503,236 +499,16 @@
       }
       window.maahiSupabase.signInWithGoogle(target)
         .catch(function (err) {
-          console.warn("Real Google OAuth redirect failed, using simulation:", err);
-          openSimulatedGoogleOAuthModal();
+          console.error("Google OAuth redirect failed:", err);
+          showError("Google Sign-In failed. Please try again or contact support.");
         });
     } else {
-      openSimulatedGoogleOAuthModal();
+      showError("Sign-In is currently unavailable because the backend is disconnected.");
     }
-  }
-
-  function openSimulatedGoogleOAuthModal() {
-    if (!oauthModal || !accountsList) return;
-
-    accountsList.style.display = "flex";
-    if (customForm) customForm.style.display = "none";
-
-    var config = window.MAAHI_CONFIG || {};
-    var adminEmail = config.adminEmail || "admin@maahiproducts.com";
-    var contractorEmail = config.contractorEmail || "contractor@maahiproducts.com";
-
-    var accounts;
-    if (currentRole === "admin") {
-      accounts = [
-        { name: "Maahi Admin", role: "Administrator", email: adminEmail },
-        { name: "Maahi Contractor", role: "Contractor", email: contractorEmail }
-      ];
-    } else {
-      accounts = [
-        { name: "Harsh Vardhan", email: "harsh@gmail.com", addresses: [] },
-        { name: "Guest Grower", email: "guest@gmail.com", addresses: [] }
-      ];
-    }
-
-    var html = "";
-    accounts.forEach(function (acc) {
-      var initial = acc.name.charAt(0).toUpperCase();
-      html += '<div class="google-account-row" data-email="' + acc.email + '" style="display:flex; align-items:center; gap:0.75rem; padding:0.75rem 0.5rem; cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background 0.15s ease;">';
-      html += '  <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, ' + (currentRole === "admin" ? "var(--admin-accent), var(--admin-gold)" : "var(--accent), var(--gold)") + '); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.95rem;">' + initial + '</div>';
-      html += '  <div style="flex:1; min-width:0; text-align:left;">';
-      html += '    <strong style="display:block; font-size:0.88rem; color:#3c4043; line-height:1.2;">' + acc.name + '</strong>';
-      html += '    <span style="font-size:0.78rem; color:#5f6368; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + acc.email + '</span>';
-      html += '  </div>';
-      html += '</div>';
-    });
-
-    html += '<div id="btn-google-use-another" style="display:flex; align-items:center; gap:0.75rem; padding:0.75rem 0.5rem; cursor:pointer; transition:background 0.15s ease; color:#1a73e8; font-weight:600; font-size:0.88rem; border-top:1px solid #dadce0;">';
-    html += '  <div style="width:32px; height:32px; border-radius:50%; border:1px solid #dadce0; display:flex; align-items:center; justify-content:center; font-size:1.2rem; color:#5f6368; background:#fff;">+</div>';
-    html += '  <span>Use another account</span>';
-    html += '</div>';
-
-    accountsList.innerHTML = html;
-
-    // Bind row clicks
-    var rows = accountsList.querySelectorAll(".google-account-row");
-    rows.forEach(function (row) {
-      row.addEventListener("mouseenter", function () { row.style.background = "#f8f9fa"; });
-      row.addEventListener("mouseleave", function () { row.style.background = "transparent"; });
-      row.addEventListener("click", function () {
-        var email = row.getAttribute("data-email");
-        var selectedAcc = accounts.filter(function (a) { return a.email === email; })[0];
-
-        if (selectedAcc) {
-          row.style.opacity = "0.5";
-          row.style.pointerEvents = "none";
-
-          setTimeout(function () {
-            if (currentRole === "admin") {
-              var token = "maahi_google_token_" + Math.random().toString(36).substring(2);
-              var rememberCheckbox = document.getElementById("admin-remember");
-              var remember = rememberCheckbox ? rememberCheckbox.checked : false;
-
-              if (remember) {
-                localStorage.setItem(AUTH_KEY, token);
-                localStorage.setItem("maahi_user_profile", JSON.stringify(selectedAcc));
-                sessionStorage.removeItem(AUTH_KEY);
-                sessionStorage.removeItem("maahi_user_profile");
-              } else {
-                sessionStorage.setItem(AUTH_KEY, token);
-                sessionStorage.setItem("maahi_user_profile", JSON.stringify(selectedAcc));
-                localStorage.removeItem(AUTH_KEY);
-                localStorage.removeItem("maahi_user_profile");
-              }
-
-              oauthModal.style.opacity = "0";
-              oauthModal.style.pointerEvents = "none";
-              window.location.href = "owner/dashboard.html";
-            } else {
-              // Customer flow
-              var oldProfile = null;
-              try {
-                var raw = localStorage.getItem(CONSUMER_KEY);
-                if (raw) oldProfile = JSON.parse(raw);
-              } catch(e) {}
-              if (oldProfile && oldProfile.email === selectedAcc.email) {
-                selectedAcc.addresses = oldProfile.addresses || [];
-              }
-              if (!selectedAcc.addresses) selectedAcc.addresses = [];
-
-              localStorage.setItem(CONSUMER_KEY, JSON.stringify(selectedAcc));
-              oauthModal.style.opacity = "0";
-              oauthModal.style.pointerEvents = "none";
-              performRedirect();
-            }
-          }, 800);
-        }
-      });
-    });
-
-    // "Use another account" button
-    var useAnotherBtn = accountsList.querySelector("#btn-google-use-another");
-    if (useAnotherBtn && customForm) {
-      useAnotherBtn.addEventListener("mouseenter", function () { useAnotherBtn.style.background = "#f8f9fa"; });
-      useAnotherBtn.addEventListener("mouseleave", function () { useAnotherBtn.style.background = "transparent"; });
-      useAnotherBtn.addEventListener("click", function () {
-        accountsList.style.display = "none";
-        customForm.style.display = "flex";
-        var nameInp = document.getElementById("google-custom-name");
-        var emailInp = document.getElementById("google-custom-email");
-        if (nameInp) nameInp.value = "";
-        if (emailInp) emailInp.value = "";
-      });
-    }
-
-    oauthModal.style.opacity = "1";
-    oauthModal.style.pointerEvents = "auto";
   }
 
   if (googleBtn) {
     googleBtn.addEventListener("click", handleGoogleSignIn);
-  }
-
-  // Custom Google account form
-  (function () {
-    var submitBtn = document.getElementById("btn-google-custom-submit");
-    var backBtn = document.getElementById("btn-google-custom-back");
-
-    if (submitBtn) {
-      submitBtn.addEventListener("click", function () {
-        var nameInp = document.getElementById("google-custom-name");
-        var emailInp = document.getElementById("google-custom-email");
-        var name = nameInp ? nameInp.value.trim() : "";
-        var email = emailInp ? emailInp.value.trim() : "";
-
-        if (!name || !email) {
-          alert("Please fill in both name and email.");
-          return;
-        }
-        if (email.indexOf("@") === -1) {
-          alert("Please enter a valid email address.");
-          return;
-        }
-
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Signing In...";
-
-        setTimeout(function () {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Sign In";
-
-          if (currentRole === "admin") {
-            var role = "Contractor";
-            if (email.toLowerCase().indexOf("admin") !== -1 || email.toLowerCase().indexOf("owner") !== -1) {
-              role = "Administrator";
-            }
-            var adminAcc = { name: name, role: role, email: email };
-            var token = "maahi_google_token_" + Math.random().toString(36).substring(2);
-            var rememberCheckbox = document.getElementById("admin-remember");
-            var remember = rememberCheckbox ? rememberCheckbox.checked : false;
-
-            if (remember) {
-              localStorage.setItem(AUTH_KEY, token);
-              localStorage.setItem("maahi_user_profile", JSON.stringify(adminAcc));
-              sessionStorage.removeItem(AUTH_KEY);
-              sessionStorage.removeItem("maahi_user_profile");
-            } else {
-              sessionStorage.setItem(AUTH_KEY, token);
-              sessionStorage.setItem("maahi_user_profile", JSON.stringify(adminAcc));
-              localStorage.removeItem(AUTH_KEY);
-              localStorage.removeItem("maahi_user_profile");
-            }
-
-            if (oauthModal) {
-              oauthModal.style.opacity = "0";
-              oauthModal.style.pointerEvents = "none";
-            }
-            window.location.href = "owner/dashboard.html";
-          } else {
-            var custAcc = { name: name, email: email, addresses: [] };
-            var oldProfile = null;
-            try {
-              var raw = localStorage.getItem(CONSUMER_KEY);
-              if (raw) oldProfile = JSON.parse(raw);
-            } catch(e) {}
-            if (oldProfile && oldProfile.email === custAcc.email) {
-              custAcc.addresses = oldProfile.addresses || [];
-            }
-
-             localStorage.setItem(CONSUMER_KEY, JSON.stringify(custAcc));
-             if (oauthModal) {
-               oauthModal.style.opacity = "0";
-               oauthModal.style.pointerEvents = "none";
-             }
-             performRedirect();
-          }
-        }, 1000);
-      });
-    }
-
-    if (backBtn && accountsList && customForm) {
-      backBtn.addEventListener("click", function () {
-        customForm.style.display = "none";
-        accountsList.style.display = "flex";
-      });
-    }
-  })();
-
-  // Close OAuth modal
-  if (oauthClose) {
-    oauthClose.addEventListener("click", function (e) {
-      e.preventDefault();
-      oauthModal.style.opacity = "0";
-      oauthModal.style.pointerEvents = "none";
-    });
-  }
-
-  if (oauthModal) {
-    oauthModal.addEventListener("click", function (e) {
-      if (e.target === oauthModal) {
-        oauthModal.style.opacity = "0";
-        oauthModal.style.pointerEvents = "none";
-      }
-    });
   }
 
   // ================================================================
