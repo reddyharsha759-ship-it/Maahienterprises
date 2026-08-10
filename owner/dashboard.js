@@ -184,7 +184,7 @@
   // 1. Authorization check
   var hasHashToken = window.location.hash && (window.location.hash.indexOf("access_token=") !== -1 || window.location.hash.indexOf("error=") !== -1);
   if (!sessionStorage.getItem(AUTH_KEY) && !localStorage.getItem(AUTH_KEY) && !hasHashToken) {
-    window.location.replace("login.html");
+    window.location.replace("../index.html");
     return;
   }
 
@@ -1556,7 +1556,7 @@
         localStorage.removeItem(AUTH_KEY);
         sessionStorage.removeItem(PROFILE_KEY);
         localStorage.removeItem(PROFILE_KEY);
-        window.location.replace("login.html");
+        window.location.replace("../index.html");
       }
     });
   }

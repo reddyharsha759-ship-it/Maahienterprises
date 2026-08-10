@@ -530,8 +530,9 @@
           if (email === adminEmail) {
             role = "Administrator";
           }
+          var metaName = session.user.user_metadata ? (session.user.user_metadata.full_name || session.user.user_metadata.name) : null;
           var profile = {
-            name: session.user.user_metadata.full_name || email.split("@")[0],
+            name: metaName || email.split("@")[0],
             role: role,
             email: email
           };
@@ -539,8 +540,9 @@
           sessionStorage.setItem("maahi_user_profile", JSON.stringify(profile));
           window.location.href = "owner/dashboard.html";
         } else {
+          var metaName = session.user.user_metadata ? (session.user.user_metadata.full_name || session.user.user_metadata.name) : null;
           var user = {
-            name: session.user.user_metadata.full_name || email.split("@")[0],
+            name: metaName || email.split("@")[0],
             email: email,
             addresses: []
           };
@@ -574,8 +576,9 @@
           if (email === adminEmail) {
             role = "Administrator";
           }
+          var metaName = session.user.user_metadata ? (session.user.user_metadata.full_name || session.user.user_metadata.name) : null;
           var profile = {
-            name: session.user.user_metadata.full_name || email.split("@")[0],
+            name: metaName || email.split("@")[0],
             role: role,
             email: email
           };
@@ -583,8 +586,9 @@
           sessionStorage.setItem("maahi_user_profile", JSON.stringify(profile));
           window.location.href = "owner/dashboard.html";
         } else {
+          var metaName = session.user.user_metadata ? (session.user.user_metadata.full_name || session.user.user_metadata.name) : null;
           var user = {
-            name: session.user.user_metadata.full_name || email.split("@")[0],
+            name: metaName || email.split("@")[0],
             email: email,
             addresses: []
           };

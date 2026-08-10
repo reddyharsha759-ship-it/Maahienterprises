@@ -99,7 +99,18 @@
       var data = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(data)) return [];
       return data.filter(function (l) {
-        return l && l.id && CATALOG[l.id] && l.qty > 0;
+        return l && l.id && CATALOG[l.id] && (l.quantity > 0 || l.qty > 0);
+      }).map(function (l) {
+        var p = CATALOG[l.id];
+        return {
+          id: l.id,
+          name: l.name || (p ? p.title : l.title || ""),
+          price: l.price != null ? l.price : (p ? p.price : 0),
+          quantity: l.quantity != null ? l.quantity : (l.qty != null ? l.qty : 1),
+          // Aliases for compatibility
+          title: l.name || (p ? p.title : l.title || ""),
+          qty: l.quantity != null ? l.quantity : (l.qty != null ? l.qty : 1)
+        };
       });
     } catch (e) {
       return [];
@@ -112,21 +123,34 @@
 
   function cartSubtotal(lines) {
     return lines.reduce(function (sum, l) {
-      var p = CATALOG[l.id];
-      return sum + (p ? p.price * l.qty : 0);
+      var price = l.price != null ? l.price : (CATALOG[l.id] ? CATALOG[l.id].price : 0);
+      var qty = l.quantity != null ? l.quantity : (l.qty != null ? l.qty : 1);
+      return sum + (price * qty);
     }, 0);
   }
 
   function addLine(id, qty) {
-    if (!CATALOG[id]) return;
+    var p = CATALOG[id];
+    if (!p) return;
     var n = Math.max(1, parseInt(qty, 10) || 1);
     var cart = getCart();
     var found = null;
     cart.forEach(function (l) {
       if (l.id === id) found = l;
     });
-    if (found) found.qty += n;
-    else cart.push({ id: id, qty: n });
+    if (found) {
+      found.quantity = (found.quantity || found.qty || 0) + n;
+      found.qty = found.quantity;
+    } else {
+      cart.push({
+        id: id,
+        name: p.title,
+        price: p.price,
+        quantity: n,
+        title: p.title,
+        qty: n
+      });
+    }
     setCart(cart);
     refreshAll();
   }
@@ -136,7 +160,15 @@
     if (isNaN(n) || n < 1) n = 1;
     var cart = getCart().map(function (l) {
       if (l.id !== id) return l;
-      return { id: id, qty: n };
+      var p = CATALOG[l.id];
+      return {
+        id: id,
+        name: l.name || (p ? p.title : ""),
+        price: l.price != null ? l.price : (p ? p.price : 0),
+        quantity: n,
+        title: l.name || (p ? p.title : ""),
+        qty: n
+      };
     });
     setCart(cart);
     refreshAll();
@@ -1118,10 +1150,6 @@
         return;
       }
 
-      if (typeof Razorpay === "undefined") {
-        showError("Payment gateway could not be loaded. Please check your internet connection.");
-        return;
-      }
 
       if (placeOrderBtn) {
         placeOrderBtn.disabled = true;
@@ -1132,142 +1160,195 @@
       var fd = new FormData(form);
       var lines = cart.map(function (line) {
         var p = CATALOG[line.id];
-        if (!p) return null;
+        var title = line.name || (p ? p.title : "");
+        var price = line.price != null ? line.price : (p ? p.price : 0);
+        var quantity = line.quantity != null ? line.quantity : line.qty;
         return {
           id: line.id,
-          title: p.title,
-          qty: line.qty,
-          unitPrice: p.price,
-          unitLabel: p.unitLabel,
-          lineTotal: p.price * line.qty,
+          name: title,
+          price: price,
+          quantity: quantity,
+          lineTotal: price * quantity
         };
-      }).filter(Boolean);
+      });
       var subtotal = cartSubtotal(cart);
 
-      var configKey = window.MAAHI_CONFIG && window.MAAHI_CONFIG.razorpayKeyId;
-      var rzpKey = configKey || localStorage.getItem("maahi_razorpay_key") || "rzp_test_SyiE1HAylAQAEM";
-      var options = {
-        "key": rzpKey,
-        "amount": Math.round(subtotal * 100),
-        "currency": "INR",
-        "name": "MAAHI PRODUCTS",
-        "description": "Payment for order " + orderId,
-        "theme": {
-          "color": "#2d6a4f"
+      var orderPayload = {
+        orderId: orderId,
+        createdAt: new Date().toISOString(),
+        cart: lines,
+        userDetails: {
+          name: String(fd.get("name") || ""),
+          email: String(fd.get("email") || ""),
+          phone: String(fd.get("phone") || ""),
+          fulfillment: String(fd.get("fulfillment") || ""),
+          targetDate: String(fd.get("target_date") || ""),
+          region: String(fd.get("region") || ""),
+          address: String(fd.get("address") || ""),
+          notes: String(fd.get("notes") || "")
         },
-        "prefill": {
-          "name": String(fd.get("name") || ""),
-          "email": String(fd.get("email") || ""),
-          "contact": String(fd.get("phone") || "")
-        },
-        "handler": function (response) {
-          var orderRecord = {
+        subtotal: subtotal
+      };
+
+      console.log("Packaged Checkout Order JSON:", orderPayload);
+
+      function saveOrderLocally() {
+        try {
+          var raw = localStorage.getItem(ORDERS_KEY);
+          var list = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(list)) list = [];
+          list.unshift({
             id: orderId,
-            createdAt: new Date().toISOString(),
-            status: "paid",
+            createdAt: orderPayload.createdAt,
+            status: "placed",
             subtotal: subtotal,
             lines: lines,
-            customer: {
-              name: String(fd.get("name") || ""),
-              email: String(fd.get("email") || ""),
-              phone: String(fd.get("phone") || ""),
-              fulfillment: String(fd.get("fulfillment") || ""),
-              target_date: String(fd.get("target_date") || ""),
-              region: String(fd.get("region") || ""),
-              address: String(fd.get("address") || ""),
-              notes: String(fd.get("notes") || ""),
-              razorpay_payment_id: response.razorpay_payment_id
-            },
-          };
+            customer: orderPayload.userDetails
+          });
+          if (list.length > 500) list = list.slice(0, 500);
+          localStorage.setItem(ORDERS_KEY, JSON.stringify(list));
+          
+          if (getConsumer()) {
+            renderProfile();
+          }
+        } catch (err) {
+          if (typeof console !== "undefined" && console.warn) {
+            console.warn("Could not save order locally", err);
+          }
+        }
+      }
 
-          function saveOrderLocally() {
-            try {
-              var raw = localStorage.getItem(ORDERS_KEY);
-              var list = raw ? JSON.parse(raw) : [];
-              if (!Array.isArray(list)) list = [];
-              list.unshift(orderRecord);
-              if (list.length > 500) list = list.slice(0, 500);
-              localStorage.setItem(ORDERS_KEY, JSON.stringify(list));
-              
-              if (getConsumer()) {
-                renderProfile();
+      function completeCheckout() {
+        setCart([]);
+        refreshAll();
+
+        form.classList.add("checkout-form-hidden");
+        if (checkoutSummary) checkoutSummary.setAttribute("hidden", "");
+        if (checkoutEmpty) checkoutEmpty.setAttribute("hidden", "");
+        if (orderNumberLine) orderNumberLine.textContent = "Order " + orderId;
+        if (success) {
+          success.hidden = false;
+          success.focus();
+        }
+      }
+
+      // If Razorpay is loaded, proceed with online payment flow
+      if (typeof Razorpay !== "undefined") {
+        if (placeOrderBtn) {
+          placeOrderBtn.disabled = true;
+          placeOrderBtn.textContent = "Initiating Payment...";
+        }
+
+        var configKey = window.MAAHI_CONFIG && window.MAAHI_CONFIG.razorpayKeyId;
+        var rzpKey = configKey || localStorage.getItem("maahi_razorpay_key") || "rzp_test_SyiE1HAylAQAEM";
+        var options = {
+          "key": rzpKey,
+          "amount": Math.round(subtotal * 100),
+          "currency": "INR",
+          "name": "MAAHI PRODUCTS",
+          "description": "Payment for order " + orderId,
+          "theme": { "color": "#2d6a4f" },
+          "prefill": {
+            "name": orderPayload.userDetails.name,
+            "email": orderPayload.userDetails.email,
+            "contact": orderPayload.userDetails.phone
+          },
+          "handler": function (response) {
+            orderPayload.userDetails.razorpay_payment_id = response.razorpay_payment_id;
+            orderPayload.status = "paid";
+
+            if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
+              if (placeOrderBtn) {
+                placeOrderBtn.disabled = true;
+                placeOrderBtn.textContent = "Recording Payment...";
               }
-            } catch (err) {
-              if (typeof console !== "undefined" && console.warn) {
-                console.warn("Could not save order locally", err);
+              window.maahiSupabase.saveOrder(orderPayload).then(function () {
+                saveOrderLocally();
+                if (placeOrderBtn) {
+                  placeOrderBtn.disabled = false;
+                  placeOrderBtn.textContent = "Place Order";
+                }
+                completeCheckout();
+              }).catch(function (err) {
+                console.warn("Supabase saveOrder failed, falling back to local:", err);
+                saveOrderLocally();
+                if (placeOrderBtn) {
+                  placeOrderBtn.disabled = false;
+                  placeOrderBtn.textContent = "Place Order";
+                }
+                completeCheckout();
+              });
+            } else {
+              saveOrderLocally();
+              completeCheckout();
+            }
+          },
+          "modal": {
+            "ondismiss": function () {
+              if (placeOrderBtn) {
+                placeOrderBtn.disabled = false;
+                placeOrderBtn.textContent = "Place your order";
               }
+              showError("Payment was cancelled. Please try again.");
             }
           }
+        };
 
-          function completeCheckout() {
-            setCart([]);
-            refreshAll();
-
-            form.classList.add("checkout-form-hidden");
-            if (checkoutSummary) checkoutSummary.setAttribute("hidden", "");
-            if (checkoutEmpty) checkoutEmpty.setAttribute("hidden", "");
-            if (orderNumberLine) orderNumberLine.textContent = "Order " + orderId + " (Paid)";
-            if (success) {
-              success.hidden = false;
-              success.focus();
-            }
+        try {
+          var rzp = new Razorpay(options);
+          if (typeof rzp.on === "function") {
+            rzp.on('payment.failed', function (resp) {
+              if (placeOrderBtn) {
+                placeOrderBtn.disabled = false;
+                placeOrderBtn.textContent = "Place your order";
+              }
+              showError("Payment failed: " + (resp.error ? resp.error.description : "Please try again."));
+            });
           }
+          rzp.open();
+        } catch (err) {
+          if (placeOrderBtn) {
+            placeOrderBtn.disabled = false;
+            placeOrderBtn.textContent = "Place your order";
+          }
+          console.warn("Razorpay init error, placing order directly:", err);
+          saveOrderLocally();
+          completeCheckout();
+        }
+      } else {
+        // Direct checkout order submission to Supabase
+        if (placeOrderBtn) {
+          placeOrderBtn.disabled = true;
+          placeOrderBtn.textContent = "Processing...";
+        }
 
-          if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
-            if (placeOrderBtn) {
-              placeOrderBtn.disabled = true;
-              placeOrderBtn.textContent = "Recording Payment...";
-            }
-            window.maahiSupabase.saveOrder(orderRecord).then(function () {
+        if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
+          window.maahiSupabase.saveOrder(orderPayload)
+            .then(function () {
               saveOrderLocally();
               if (placeOrderBtn) {
                 placeOrderBtn.disabled = false;
-                placeOrderBtn.textContent = "Place Order";
+                placeOrderBtn.textContent = "Place your order";
               }
               completeCheckout();
-            }).catch(function (err) {
-              console.warn("Supabase saveOrder failed, falling back to local:", err);
+            })
+            .catch(function (err) {
+              console.warn("Supabase order insert failed, saving locally:", err);
               saveOrderLocally();
               if (placeOrderBtn) {
                 placeOrderBtn.disabled = false;
-                placeOrderBtn.textContent = "Place Order";
+                placeOrderBtn.textContent = "Place your order";
               }
               completeCheckout();
             });
-          } else {
-            saveOrderLocally();
-            completeCheckout();
+        } else {
+          saveOrderLocally();
+          if (placeOrderBtn) {
+            placeOrderBtn.disabled = false;
+            placeOrderBtn.textContent = "Place your order";
           }
-        },
-        "modal": {
-          "ondismiss": function () {
-            if (placeOrderBtn) {
-              placeOrderBtn.disabled = false;
-              placeOrderBtn.textContent = "Place your order";
-            }
-            showError("Payment was cancelled. Please try again.");
-          }
+          completeCheckout();
         }
-      };
-
-      try {
-        var rzp = new Razorpay(options);
-        if (typeof rzp.on === "function") {
-          rzp.on('payment.failed', function (resp) {
-            if (placeOrderBtn) {
-              placeOrderBtn.disabled = false;
-              placeOrderBtn.textContent = "Place your order";
-            }
-            showError("Payment failed: " + (resp.error ? resp.error.description : "Please try again."));
-          });
-        }
-        rzp.open();
-      } catch (err) {
-        if (placeOrderBtn) {
-          placeOrderBtn.disabled = false;
-          placeOrderBtn.textContent = "Place your order";
-        }
-        showError("Failed to initialize payment gateway: " + err.message);
       }
     });
   }
@@ -1373,8 +1454,9 @@
           return;
         }
 
+        var metaName = session.user.user_metadata ? (session.user.user_metadata.full_name || session.user.user_metadata.name) : null;
         var user = {
-          name: session.user.user_metadata.full_name || email.split("@")[0],
+          name: metaName || email.split("@")[0],
           email: email,
           addresses: []
         };
@@ -1415,8 +1497,9 @@
           return;
         }
 
+        var metaName = session.user.user_metadata ? (session.user.user_metadata.full_name || session.user.user_metadata.name) : null;
         var user = {
-          name: session.user.user_metadata.full_name || email.split("@")[0],
+          name: metaName || email.split("@")[0],
           email: email,
           addresses: []
         };
