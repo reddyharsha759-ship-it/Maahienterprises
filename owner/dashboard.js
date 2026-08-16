@@ -693,13 +693,17 @@
                         c.fulfillment === "export" ? "Export" : "Quote";
       var dateLabel = c.target_date || "—";
 
+      var paymentBadge = c.razorpay_payment_id 
+        ? '<span style="display:block; margin-top:3px; padding:1px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; background:#e8f5e9; color:#2d6a4f; border:1px solid #c8e6c9;">✓ Paid • Razorpay</span>' 
+        : (st === 'paid' ? '<span style="display:block; margin-top:3px; padding:1px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; background:#e8f5e9; color:#2d6a4f;">Paid</span>' : '');
+
       tr.innerHTML =
         '<td><span class="mono">' + escapeHtml(o.id) + '</span></td>' +
         '<td>' + escapeHtml(dt) + '</td>' +
         '<td class="customer-cell"><strong>' + escapeHtml(c.name || "—") + '</strong><span>' + escapeHtml(c.email || "") + '</span></td>' +
         '<td><span class="amount-text">' + amountVal + '</span></td>' +
         '<td><strong>' + escapeHtml(fulfillText) + '</strong><span style="display:block; font-size:0.75rem; color:var(--text-muted);">' + escapeHtml(dateLabel) + '</span></td>' +
-        '<td><span class="' + statusClass(st) + '">' + escapeHtml(st) + '</span></td>' +
+        '<td><span class="' + statusClass(st) + '">' + escapeHtml(st) + '</span>' + paymentBadge + '</td>' +
         '<td style="text-align: right;"></td>';
       
       var actionCell = tr.querySelector("td:last-child");

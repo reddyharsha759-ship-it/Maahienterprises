@@ -1172,12 +1172,14 @@
         };
       });
       var subtotal = cartSubtotal(cart);
+      var paymentMethod = String(fd.get("payment_method") || "razorpay");
 
       var orderPayload = {
-        orderId: orderId,
+        id: orderId,
         createdAt: new Date().toISOString(),
-        cart: lines,
-        userDetails: {
+        status: "placed",
+        lines: lines,
+        customer: {
           name: String(fd.get("name") || ""),
           email: String(fd.get("email") || ""),
           phone: String(fd.get("phone") || ""),
@@ -1185,7 +1187,8 @@
           targetDate: String(fd.get("target_date") || ""),
           region: String(fd.get("region") || ""),
           address: String(fd.get("address") || ""),
-          notes: String(fd.get("notes") || "")
+          notes: String(fd.get("notes") || ""),
+          payment_method: paymentMethod
         },
         subtotal: subtotal
       };
@@ -1200,10 +1203,10 @@
           list.unshift({
             id: orderId,
             createdAt: orderPayload.createdAt,
-            status: "placed",
+            status: orderPayload.status || "placed",
             subtotal: subtotal,
             lines: lines,
-            customer: orderPayload.userDetails
+            customer: orderPayload.customer
           });
           if (list.length > 500) list = list.slice(0, 500);
           localStorage.setItem(ORDERS_KEY, JSON.stringify(list));
@@ -1218,7 +1221,7 @@
         }
       }
 
-      function completeCheckout() {
+      function completeCheckout(paymentInfo) {
         setCart([]);
         refreshAll();
 
@@ -1226,14 +1229,30 @@
         if (checkoutSummary) checkoutSummary.setAttribute("hidden", "");
         if (checkoutEmpty) checkoutEmpty.setAttribute("hidden", "");
         if (orderNumberLine) orderNumberLine.textContent = "Order " + orderId;
+        
+        var paymentDetailsEl = document.getElementById("order-payment-details");
+        if (paymentDetailsEl) {
+          if (paymentInfo && paymentInfo.razorpay_payment_id) {
+            paymentDetailsEl.innerHTML = 
+              '<strong>Payment Status:</strong> <span style="color:#067d17; font-weight:700;">✓ Paid via Razorpay</span><br>' +
+              '<span style="font-size:0.82rem; color:#2d6a4f; margin-top:4px; display:inline-block;">Razorpay Ref: <code style="background:#fff; padding:2px 6px; border-radius:4px; border:1px solid #a5d6a7; font-weight:600;">' + escapeHtml(paymentInfo.razorpay_payment_id) + '</code></span>';
+            paymentDetailsEl.hidden = false;
+          } else {
+            paymentDetailsEl.innerHTML = 
+              '<strong>Payment Status:</strong> <span style="color:#c57a00; font-weight:700;">Pending (Pay on Delivery / Proforma Invoice)</span><br>' +
+              '<span style="font-size:0.82rem; color:#555; margin-top:2px; display:inline-block;">Our sales team will contact you to verify details and finalize invoice.</span>';
+            paymentDetailsEl.hidden = false;
+          }
+        }
+
         if (success) {
           success.hidden = false;
           success.focus();
         }
       }
 
-      // If Razorpay is loaded, proceed with online payment flow
-      if (typeof Razorpay !== "undefined") {
+      // If Razorpay is selected and Razorpay SDK is present
+      if (paymentMethod === "razorpay" && typeof Razorpay !== "undefined") {
         if (placeOrderBtn) {
           placeOrderBtn.disabled = true;
           placeOrderBtn.textContent = "Initiating Payment...";
@@ -1246,15 +1265,17 @@
           "amount": Math.round(subtotal * 100),
           "currency": "INR",
           "name": "MAAHI PRODUCTS",
-          "description": "Payment for order " + orderId,
+          "description": "Order " + orderId + " (" + lines.length + " item" + (lines.length > 1 ? "s" : "") + ")",
           "theme": { "color": "#2d6a4f" },
           "prefill": {
-            "name": orderPayload.userDetails.name,
-            "email": orderPayload.userDetails.email,
-            "contact": orderPayload.userDetails.phone
+            "name": orderPayload.customer.name,
+            "email": orderPayload.customer.email,
+            "contact": orderPayload.customer.phone
           },
           "handler": function (response) {
-            orderPayload.userDetails.razorpay_payment_id = response.razorpay_payment_id;
+            orderPayload.customer.razorpay_payment_id = response.razorpay_payment_id;
+            if (response.razorpay_order_id) orderPayload.customer.razorpay_order_id = response.razorpay_order_id;
+            if (response.razorpay_signature) orderPayload.customer.razorpay_signature = response.razorpay_signature;
             orderPayload.status = "paid";
 
             if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
@@ -1266,21 +1287,25 @@
                 saveOrderLocally();
                 if (placeOrderBtn) {
                   placeOrderBtn.disabled = false;
-                  placeOrderBtn.textContent = "Place Order";
+                  placeOrderBtn.textContent = "Place your order";
                 }
-                completeCheckout();
+                completeCheckout({ razorpay_payment_id: response.razorpay_payment_id });
               }).catch(function (err) {
                 console.warn("Supabase saveOrder failed, falling back to local:", err);
                 saveOrderLocally();
                 if (placeOrderBtn) {
                   placeOrderBtn.disabled = false;
-                  placeOrderBtn.textContent = "Place Order";
+                  placeOrderBtn.textContent = "Place your order";
                 }
-                completeCheckout();
+                completeCheckout({ razorpay_payment_id: response.razorpay_payment_id });
               });
             } else {
               saveOrderLocally();
-              completeCheckout();
+              if (placeOrderBtn) {
+                placeOrderBtn.disabled = false;
+                placeOrderBtn.textContent = "Place your order";
+              }
+              completeCheckout({ razorpay_payment_id: response.razorpay_payment_id });
             }
           },
           "modal": {
@@ -1289,7 +1314,7 @@
                 placeOrderBtn.disabled = false;
                 placeOrderBtn.textContent = "Place your order";
               }
-              showError("Payment was cancelled. Please try again.");
+              showError("Razorpay payment window closed. You can retry or switch payment method.");
             }
           }
         };
@@ -1302,7 +1327,7 @@
                 placeOrderBtn.disabled = false;
                 placeOrderBtn.textContent = "Place your order";
               }
-              showError("Payment failed: " + (resp.error ? resp.error.description : "Please try again."));
+              showError("Razorpay payment failed: " + (resp.error ? resp.error.description : "Please try again."));
             });
           }
           rzp.open();
@@ -1311,12 +1336,12 @@
             placeOrderBtn.disabled = false;
             placeOrderBtn.textContent = "Place your order";
           }
-          console.warn("Razorpay init error, placing order directly:", err);
+          console.warn("Razorpay init error, falling back to offline order:", err);
           saveOrderLocally();
-          completeCheckout();
+          completeCheckout(null);
         }
       } else {
-        // Direct checkout order submission to Supabase
+        // Direct / Offline order submission
         if (placeOrderBtn) {
           placeOrderBtn.disabled = true;
           placeOrderBtn.textContent = "Processing...";
@@ -1330,7 +1355,7 @@
                 placeOrderBtn.disabled = false;
                 placeOrderBtn.textContent = "Place your order";
               }
-              completeCheckout();
+              completeCheckout(null);
             })
             .catch(function (err) {
               console.warn("Supabase order insert failed, saving locally:", err);
@@ -1339,7 +1364,7 @@
                 placeOrderBtn.disabled = false;
                 placeOrderBtn.textContent = "Place your order";
               }
-              completeCheckout();
+              completeCheckout(null);
             });
         } else {
           saveOrderLocally();
@@ -1347,7 +1372,7 @@
             placeOrderBtn.disabled = false;
             placeOrderBtn.textContent = "Place your order";
           }
-          completeCheckout();
+          completeCheckout(null);
         }
       }
     });

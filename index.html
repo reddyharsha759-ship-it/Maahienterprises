@@ -359,8 +359,41 @@
                 <textarea id="order-address" name="address" rows="2" maxlength="500" placeholder="Building, street, landmark — only if you selected delivery"></textarea>
               </div>
               <div class="field field-span">
-                <label for="order-notes">Order notes </span></label>
+                <label for="order-notes">Order notes </label>
                 <textarea id="order-notes" name="notes" rows="4" maxlength="2000" placeholder="Grade, EC, mesh size, packing, incoterms, or other requirements"></textarea>
+              </div>
+
+              <!-- Payment Method Selector -->
+              <div class="field field-span payment-method-field" style="margin-top: 0.5rem; padding: 1.15rem; background: #f8faf8; border: 1px solid rgba(45, 106, 79, 0.2); border-radius: 12px;">
+                <label style="display: block; font-weight: 700; font-size: 0.92rem; margin-bottom: 0.65rem; color: #1c2b24;">
+                  Payment Method <span class="req" aria-hidden="true">*</span>
+                </label>
+                <div class="payment-options" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                  <label class="payment-option-card" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; border: 2px solid #2d6a4f; border-radius: 10px; background: #ffffff; cursor: pointer;">
+                    <input type="radio" name="payment_method" value="razorpay" checked style="margin-top: 0.25rem; accent-color: #2d6a4f;">
+                    <div style="flex: 1;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                        <strong style="color: #1c2b24; font-size: 0.92rem;">Instant Online Payment via Razorpay</strong>
+                        <span style="font-size: 0.72rem; background: #e8f5e9; color: #2d6a4f; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600;">Fast &amp; Secure</span>
+                      </div>
+                      <p style="font-size: 0.8rem; color: #555; margin: 0.25rem 0 0 0;">Pay via UPI (GPay, PhonePe, Paytm), Credit / Debit Cards, NetBanking, or Wallets.</p>
+                      <div style="display: flex; gap: 0.4rem; margin-top: 0.4rem; font-size: 0.72rem; color: #555; align-items: center;">
+                        <span style="background: #f0f4f1; padding: 2px 6px; border-radius: 4px; font-weight: 600; color:#2d6a4f;">UPI</span>
+                        <span style="background: #f0f4f1; padding: 2px 6px; border-radius: 4px; font-weight: 600; color:#2d6a4f;">Cards</span>
+                        <span style="background: #f0f4f1; padding: 2px 6px; border-radius: 4px; font-weight: 600; color:#2d6a4f;">NetBanking</span>
+                        <span style="background: #f0f4f1; padding: 2px 6px; border-radius: 4px; font-weight: 600; color:#2d6a4f;">Wallets</span>
+                        <span style="margin-left: auto; font-size: 0.72rem; color: #2d6a4f; font-weight: 600;">🔒 256-bit Encrypted</span>
+                      </div>
+                    </div>
+                  </label>
+                  <label class="payment-option-card" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; border: 1px solid rgba(0,0,0,0.12); border-radius: 10px; background: #ffffff; cursor: pointer;">
+                    <input type="radio" name="payment_method" value="offline" style="margin-top: 0.25rem; accent-color: #2d6a4f;">
+                    <div>
+                      <strong style="color: #1c2b24; font-size: 0.92rem;">Pay on Delivery / Proforma Invoice</strong>
+                      <p style="font-size: 0.8rem; color: #555; margin: 0.25rem 0 0 0;">Place order now and settle payment upon invoice verification with our team.</p>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
             <p class="form-hint"><span class="req" aria-hidden="true">*</span> Required. We use your details only to fulfil this order.</p>
@@ -370,7 +403,8 @@
           <div class="booking-success" id="order-success" hidden tabindex="-1" aria-live="polite">
             <p class="success-title">Order placed</p>
             <p id="order-number-line" class="order-number-line"></p>
-            <p>Thank you. A confirmation has been recorded. We will follow up by email with availability and payment or proforma details.</p>
+            <div id="order-payment-details" style="margin: 0.75rem 0; padding: 0.85rem 1rem; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; font-size: 0.88rem; color: #1b5e20;"></div>
+            <p>Thank you. A confirmation has been recorded. We will follow up by email with availability and dispatch details.</p>
             <button type="button" class="btn btn-text" id="order-reset">Continue shopping</button>
           </div>
         </div>
