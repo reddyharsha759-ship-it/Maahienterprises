@@ -884,6 +884,10 @@
         ? '<div style="margin-top:4px; font-size:0.72rem; color:var(--accent); font-weight:600; display:flex; align-items:center; gap:4px; background:rgba(45,106,79,0.08); padding:2px 6px; border-radius:4px; border:1px solid rgba(45,106,79,0.18);"><span>🚚</span><span>' + escapeHtml(c.delivery_partner || 'Courier') + (c.tracking_id ? ': <code style="font-size:0.72rem; font-weight:700;">' + escapeHtml(c.tracking_id) + '</code>' : '') + '</span></div>'
         : '';
 
+      var paymentBadge = c.razorpay_payment_id 
+        ? '<span style="display:block; margin-top:3px; padding:1px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; background:#e8f5e9; color:#2d6a4f; border:1px solid #c8e6c9;">✓ Paid</span>' 
+        : '';
+
       tr.innerHTML =
         '<td><span class="mono">' + escapeHtml(o.id) + '</span></td>' +
         '<td>' + escapeHtml(dt) + '</td>' +
