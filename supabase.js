@@ -262,16 +262,27 @@
             if (res.error) {
               console.warn("Supabase fetchOrders error:", res.error);
               resolve(null);
+            } else if (!res.data) {
+              resolve([]);
             } else {
               // Map DB fields to application order structures
               var mapped = res.data.map(function (row) {
+                var lines = [];
+                var customer = {};
+                try {
+                  lines = typeof row.lines === "string" ? JSON.parse(row.lines) : (row.lines || []);
+                } catch(e) { lines = []; }
+                try {
+                  customer = typeof row.customer === "string" ? JSON.parse(row.customer) : (row.customer || {});
+                } catch(e) { customer = {}; }
+
                 return {
                   id: row.id,
-                  createdAt: row.created_at,
-                  status: row.status,
-                  subtotal: parseFloat(row.subtotal),
-                  lines: typeof row.lines === "string" ? JSON.parse(row.lines) : row.lines,
-                  customer: typeof row.customer === "string" ? JSON.parse(row.customer) : row.customer
+                  createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+                  status: row.status || "new",
+                  subtotal: parseFloat(row.subtotal) || 0,
+                  lines: lines,
+                  customer: customer
                 };
               });
               resolve(mapped);

@@ -104,12 +104,29 @@
 
   function refreshOrdersData() {
     renderTable();
+    renderRecentOrders();
 
     if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
       window.maahiSupabase.fetchOrders().then(function (dbOrders) {
-        if (dbOrders) {
-          saveOrders(dbOrders);
+        if (dbOrders && Array.isArray(dbOrders)) {
+          var localOrders = loadOrders();
+          var mergedMap = {};
+          
+          localOrders.forEach(function (o) {
+            if (o && o.id) mergedMap[o.id] = o;
+          });
+          
+          dbOrders.forEach(function (o) {
+            if (o && o.id) mergedMap[o.id] = o;
+          });
+          
+          var mergedList = Object.values(mergedMap).sort(function (a, b) {
+            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+          });
+          
+          saveOrders(mergedList);
           renderTable();
+          renderRecentOrders();
         }
       }).catch(function (err) {
         console.warn("Supabase fetch orders failed:", err);
@@ -882,6 +899,68 @@
       actionCell.appendChild(viewBtn);
       tbody.appendChild(tr);
     });
+
+    renderRecentOrders();
+  }
+
+  function renderRecentOrders() {
+    var overviewTbody = document.getElementById("overview-orders-tbody");
+    var overviewEmpty = document.getElementById("overview-orders-empty");
+    var overviewTable = document.getElementById("overview-orders-table");
+    if (!overviewTbody) return;
+
+    overviewTbody.innerHTML = "";
+    var orders = loadOrders();
+    if (!orders || orders.length === 0) {
+      if (overviewEmpty) overviewEmpty.removeAttribute("hidden");
+      if (overviewTable) overviewTable.hidden = true;
+      return;
+    }
+
+    if (overviewEmpty) overviewEmpty.setAttribute("hidden", "true");
+    if (overviewTable) overviewTable.hidden = false;
+
+    var recent = orders.slice(0, 8);
+    recent.forEach(function (o) {
+      var tr = document.createElement("tr");
+      var c = o.customer || {};
+      var st = o.status || "new";
+      var dt = formatDate(o.createdAt);
+      var amountVal = formatMoney(o.subtotal);
+      
+      var fulfillText = c.fulfillment === "ship" ? "Delivery" :
+                        c.fulfillment === "pickup" ? "Pickup" :
+                        c.fulfillment === "export" ? "Export" : "Quote";
+
+      var trackingBadge = (c.delivery_partner || c.tracking_id)
+        ? '<div style="margin-top:3px; font-size:0.7rem; color:var(--accent); font-weight:600;">🚚 ' + escapeHtml(c.delivery_partner || 'Courier') + (c.tracking_id ? ': <code>' + escapeHtml(c.tracking_id) + '</code>' : '') + '</div>'
+        : '';
+
+      var paymentBadge = c.razorpay_payment_id 
+        ? '<span style="display:block; margin-top:3px; padding:1px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; background:#e8f5e9; color:#2d6a4f; border:1px solid #c8e6c9;">✓ Paid</span>' 
+        : '';
+
+      tr.innerHTML =
+        '<td><span class="mono">' + escapeHtml(o.id) + '</span></td>' +
+        '<td>' + escapeHtml(dt) + '</td>' +
+        '<td class="customer-cell"><strong>' + escapeHtml(c.name || "—") + '</strong><span>' + escapeHtml(c.email || "") + '</span></td>' +
+        '<td><span class="amount-text">' + amountVal + '</span></td>' +
+        '<td><strong>' + escapeHtml(fulfillText) + '</strong>' + trackingBadge + '</td>' +
+        '<td><span class="' + statusClass(st) + '">' + escapeHtml(st) + '</span>' + paymentBadge + '</td>' +
+        '<td style="text-align: right;"></td>';
+
+      var actionCell = tr.querySelector("td:last-child");
+      var viewBtn = document.createElement("button");
+      viewBtn.type = "button";
+      viewBtn.className = "btn-small";
+      viewBtn.textContent = "View";
+      viewBtn.addEventListener("click", function () {
+        openDetail(o);
+      });
+
+      actionCell.appendChild(viewBtn);
+      overviewTbody.appendChild(tr);
+    });
   }
 
   // --- INVENTORY MANAGEMENT ---
@@ -1441,6 +1520,39 @@
       URL.revokeObjectURL(a.href);
     });
   }
+
+  var btnRefreshOrders = document.getElementById("btn-refresh-orders");
+  if (btnRefreshOrders) {
+    btnRefreshOrders.addEventListener("click", function () {
+      btnRefreshOrders.disabled = true;
+      btnRefreshOrders.textContent = "Syncing...";
+      refreshOrdersData();
+      setTimeout(function () {
+        btnRefreshOrders.disabled = false;
+        btnRefreshOrders.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Refresh &amp; Sync';
+      }, 700);
+    });
+  }
+
+  var btnRefreshOverview = document.getElementById("btn-refresh-overview");
+  if (btnRefreshOverview) {
+    btnRefreshOverview.addEventListener("click", function () {
+      btnRefreshOverview.disabled = true;
+      btnRefreshOverview.textContent = "Syncing...";
+      refreshOrdersData();
+      setTimeout(function () {
+        btnRefreshOverview.disabled = false;
+        btnRefreshOverview.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Refresh Data';
+      }, 700);
+    });
+  }
+
+  // Periodic background refresh every 20 seconds
+  setInterval(function () {
+    if (document.visibilityState === "visible") {
+      refreshOrdersData();
+    }
+  }, 20000);
 
   var btnExportOrdersExcel = document.getElementById("btn-export-orders-excel");
   if (btnExportOrdersExcel) {

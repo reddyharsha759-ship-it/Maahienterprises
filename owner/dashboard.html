@@ -103,7 +103,12 @@
             <p class="topbar-subtitle">Real-time tracking of organic media sales and logistics.</p>
           </div>
           <div class="topbar-right">
-            <!-- Space for other potential quick actions -->
+            <button type="button" class="btn-primary" id="btn-refresh-overview" title="Refresh & Sync Orders with Database">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh Data
+            </button>
           </div>
         </header>
 
@@ -131,6 +136,44 @@
             </div>
           </div>
         </section>
+
+        <!-- Overview Recent Orders Section -->
+        <section class="orders-section" style="margin-top: 1.5rem;">
+          <div class="orders-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h2>Recent Customer Orders</h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">Latest purchases placed across storefront channels.</p>
+            </div>
+            <a href="#orders" class="btn-primary" style="text-decoration:none; font-size:0.82rem; padding:0.5rem 0.9rem;">
+              View All Orders &rarr;
+            </a>
+          </div>
+
+          <div class="table-card">
+            <div class="table-wrap">
+              <table class="orders-table" id="overview-orders-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Order ID</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Customer Info</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">Fulfillment</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" style="text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-orders-tbody">
+                  <!-- Rendered dynamically by javascript -->
+                </tbody>
+              </table>
+              <div id="overview-orders-empty" class="orders-empty" hidden>
+                <p>No customer orders placed yet.</p>
+                <small>Orders will appear here automatically when customers complete checkout.</small>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <!-- TAB: Orders -->
@@ -141,6 +184,12 @@
             <p class="topbar-subtitle">Track, filter, and update customer order fulfillment status.</p>
           </div>
           <div class="topbar-right" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn-primary" id="btn-refresh-orders" title="Refresh & Sync Orders with Database">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh &amp; Sync
+            </button>
             <button type="button" class="btn-primary" id="btn-export" title="Export orders data to JSON">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
