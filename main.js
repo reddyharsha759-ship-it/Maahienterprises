@@ -301,6 +301,7 @@
   function renderCheckout() {
     var cart = getCart();
     var sub = cartSubtotal(cart);
+    var user = getConsumer();
 
     if (checkoutEmpty) {
       if (cart.length) checkoutEmpty.setAttribute("hidden", "");
@@ -313,11 +314,11 @@
     }
 
     if (orderForm) {
-      orderForm.classList.toggle("checkout-form-hidden", !cart.length);
+      orderForm.classList.toggle("checkout-form-hidden", !cart.length || !user);
     }
 
     if (placeOrderBtn) {
-      placeOrderBtn.disabled = !cart.length;
+      placeOrderBtn.disabled = !cart.length || !user;
     }
 
     if (checkoutLines && checkoutSubtotalEl) {
@@ -466,6 +467,7 @@
       if (regionField) regionField.value = "";
       if (addressField) addressField.value = "";
     }
+    renderCheckout();
   }
 
   // --- AUTH SYSTEM ---
@@ -504,9 +506,15 @@
     authSection.classList.remove("checkout-auth-hidden");
     
     if (user) {
-      var html = '<div class="checkout-signed-in-info">';
-      html += '  <p class="checkout-signed-in-text">Signed in as <strong>' + escapeHtml(user.name) + '</strong> (' + escapeHtml(user.email) + ')</p>';
-      html += '  <button type="button" class="btn-signout-link" id="checkout-signout-btn">Sign Out</button>';
+      var html = '<div class="checkout-signed-in-info" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; background:#f0f7f3; border:1px solid rgba(45,106,79,0.2); border-radius:10px; padding:0.85rem 1rem;">';
+      html += '  <div style="display:flex; align-items:center; gap:0.65rem;">';
+      html += '    <div style="width:34px; height:34px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">✓</div>';
+      html += '    <div>';
+      html += '      <p class="checkout-signed-in-text" style="margin:0; font-size:0.92rem; color:var(--text);">Signed in as <strong>' + escapeHtml(user.name) + '</strong></p>';
+      html += '      <span style="font-size:0.8rem; color:var(--text-muted);">' + escapeHtml(user.email) + '</span>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '  <button type="button" class="btn-signout-link" id="checkout-signout-btn" style="background:none; border:none; color:var(--accent); font-weight:600; text-decoration:underline; cursor:pointer; font-size:0.85rem;">Switch Account / Sign Out</button>';
       html += '</div>';
       authSection.innerHTML = html;
       
@@ -515,9 +523,12 @@
         signoutBtn.addEventListener("click", logoutConsumer);
       }
     } else {
-      var html = '<p class="checkout-auth-title">Customer Account</p>';
-      html += '<p class="checkout-auth-text">Sign in to your Maahi account to pre-fill your delivery details and track your order progress.</p>';
-      html += '<a href="login.html?redirect=#order" class="btn btn--secondary" style="display:flex; align-items:center; justify-content:center; width:100%; text-decoration:none; padding:0.65rem 1rem; border-radius:8px; font-weight:600; text-align:center;">Sign In / Register</a>';
+      var html = '<div style="background: rgba(45, 106, 79, 0.06); border: 1.5px dashed rgba(45, 106, 79, 0.3); border-radius: 12px; padding: 1.5rem 1.25rem; text-align: center;">';
+      html += '  <div style="width: 44px; height: 44px; margin: 0 auto 0.65rem; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.15rem;">🔒</div>';
+      html += '  <h3 style="margin: 0 0 0.35rem; color: var(--accent); font-family: var(--font-display); font-size: 1.15rem; font-weight: 700;">Customer Sign-In Required</h3>';
+      html += '  <p style="margin: 0 0 1.15rem; font-size: 0.9rem; color: var(--text-muted); line-height: 1.45; max-width: 440px; margin-left: auto; margin-right: auto;">Please sign in to your account first. After signing in, you will be able to enter delivery details and proceed to payment.</p>';
+      html += '  <a href="login.html?redirect=#order" class="btn btn-submit" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 8px; font-weight: 700; width: 100%; max-width: 280px; box-sizing: border-box; box-shadow: 0 4px 12px rgba(45,106,79,0.25);">Sign In / Register to Pay</a>';
+      html += '</div>';
       authSection.innerHTML = html;
     }
   }
@@ -1060,6 +1071,13 @@
       e.preventDefault();
       hideError();
 
+      var user = getConsumer();
+      if (!user) {
+        showError("Please sign in to your customer account to complete your order.");
+        window.location.href = "login.html?redirect=#order";
+        return;
+      }
+
       var cart = getCart();
       if (!cart.length) {
         showError("Your cart is empty. Add products before placing an order.");
@@ -1265,7 +1283,7 @@
                 placeOrderBtn.disabled = false;
                 placeOrderBtn.textContent = "Place your order";
               }
-              showError("Razorpay payment window closed. You can retry or switch payment method.");
+              showError("Payment window was closed. Please complete the online payment to place your order.");
             }
           }
         };
