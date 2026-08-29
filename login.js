@@ -42,14 +42,7 @@
 
 
 
-  // OAuth elements
-  var oauthDivider = document.getElementById("oauth-divider");
-  var googleBtn = document.getElementById("btn-google-login");
-  var oauthModal = document.getElementById("google-oauth-modal");
-  var oauthClose = document.getElementById("oauth-close");
-  var accountsList = document.getElementById("google-accounts-list");
-  var customForm = document.getElementById("google-custom-account-form");
-  var oauthModalSubtitle = document.getElementById("oauth-modal-subtitle");
+
 
   // Other
   var forgotLink = document.getElementById("forgot-link");
@@ -209,10 +202,7 @@
       showActiveCustomerForm();
       wrapperAdmin.classList.remove("active");
 
-      // Google OAuth
-      oauthDivider.style.display = "";
-      googleBtn.style.display = "";
-      if (oauthModalSubtitle) oauthModalSubtitle.textContent = "to continue to Maahi Products";
+
 
 
 
@@ -234,10 +224,7 @@
       wrapperSignup.classList.remove("active");
       wrapperAdmin.classList.add("active");
 
-      // Google OAuth
-      oauthDivider.style.display = "";
-      googleBtn.style.display = "";
-      if (oauthModalSubtitle) oauthModalSubtitle.textContent = "to continue to Maahi Owner Dashboard";
+
 
 
     }
@@ -486,30 +473,7 @@
     });
   }
 
-  // ================================================================
-  // GOOGLE SIGN-IN
-  // ================================================================
-  function handleGoogleSignIn() {
-    if (window.maahiSupabase && window.maahiSupabase.isConnected() && window.maahiSupabase.isHealthy()) {
-      var target;
-      if (currentRole === "admin") {
-        target = window.location.origin + window.location.pathname.replace("login.html", "owner/dashboard.html");
-      } else {
-        target = window.location.origin + window.location.pathname.replace("login.html", "index.html");
-      }
-      window.maahiSupabase.signInWithGoogle(target)
-        .catch(function (err) {
-          console.error("Google OAuth redirect failed:", err);
-          showError("Google Sign-In failed. Please try again or contact support.");
-        });
-    } else {
-      showError("Sign-In is currently unavailable because the backend is disconnected.");
-    }
-  }
 
-  if (googleBtn) {
-    googleBtn.addEventListener("click", handleGoogleSignIn);
-  }
 
   // ================================================================
   // Supabase Session Check

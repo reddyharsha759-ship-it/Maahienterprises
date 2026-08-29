@@ -468,7 +468,7 @@
     }
   }
 
-  // --- GOOGLE SIGN-IN & AUTH SYSTEM ---
+  // --- AUTH SYSTEM ---
   function logoutConsumer() {
     setConsumer(null);
     if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
@@ -488,18 +488,6 @@
 
     closeAllDrawers();
     refreshAll();
-  }
-
-  function handleGoogleSignIn() {
-    if (window.maahiSupabase && window.maahiSupabase.isConnected() && window.maahiSupabase.isHealthy()) {
-      window.maahiSupabase.signInWithGoogle(window.location.origin + window.location.pathname)
-        .catch(function (err) {
-          console.error("Google OAuth redirect failed:", err);
-          alert("Google Sign-In failed. Please try again or contact support.");
-        });
-    } else {
-      alert("Sign-In is currently unavailable because the backend is disconnected.");
-    }
   }
 
   function renderCheckoutAuth() {
@@ -527,26 +515,10 @@
         signoutBtn.addEventListener("click", logoutConsumer);
       }
     } else {
-      var html = '<p class="checkout-auth-title">Express Checkout</p>';
-      html += '<p class="checkout-auth-text">Sign in with Google to pre-fill your delivery details and keep track of your order progress.</p>';
-      html += '<button type="button" class="btn-google-login" id="checkout-google-login-btn">';
-      html += '  <svg width="18" height="18" viewBox="0 0 18 18">';
-      html += '    <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7l2.76 2.13c1.61-1.49 2.54-3.69 2.54-6.46z"/>';
-      html += '    <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.76-2.13c-.76.51-1.74.82-3.2.82-2.46 0-4.54-1.66-5.28-3.9L.94 12.75C2.43 15.71 5.47 18 9 18z"/>';
-      html += '    <path fill="#FBBC05" d="M3.72 10.61c-.19-.58-.3-1.2-.3-1.61s.11-1.03.3-1.61L.94 5.25C.34 6.45 0 7.8 0 9s.34 2.55.94 3.75l2.78-2.14z"/>';
-      html += '    <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.47 1.05 11.43 0 9 0 5.47 0 2.43 2.29.94 5.25l2.78 2.14c.74-2.24 2.82-3.9 5.28-3.9z"/>';
-      html += '  </svg>';
-      html += '  Sign in with Google';
-      html += '</button>';
-      html += '<p style="text-align: center; margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">';
-      html += '  Or use your <a href="login.html?redirect=#order" style="color: var(--accent); font-weight: 600; text-decoration: underline;">Maahi Account Password</a>';
-      html += '</p>';
+      var html = '<p class="checkout-auth-title">Customer Account</p>';
+      html += '<p class="checkout-auth-text">Sign in to your Maahi account to pre-fill your delivery details and track your order progress.</p>';
+      html += '<a href="login.html?redirect=#order" class="btn btn--secondary" style="display:flex; align-items:center; justify-content:center; width:100%; text-decoration:none; padding:0.65rem 1rem; border-radius:8px; font-weight:600; text-align:center;">Sign In / Register</a>';
       authSection.innerHTML = html;
-      
-      var loginBtn = authSection.querySelector("#checkout-google-login-btn");
-      if (loginBtn) {
-        loginBtn.addEventListener("click", handleGoogleSignIn);
-      }
     }
   }
 
@@ -566,22 +538,6 @@
       html += '    <input type="password" id="cust-password" name="password" required placeholder="••••••••" style="width:100%; padding:0.65rem 0.85rem; border:1px solid rgba(45, 106, 79, 0.22); border-radius:10px; background:#fcfbf9; font:inherit;">';
       html += '  </div>';
       html += '  <button type="submit" class="btn btn-submit" style="background: var(--accent); color:#fff; border-color:var(--accent); font-weight:700; width:100%; margin-top:0.5rem; padding:0.75rem; border-radius:8px;">Sign In</button>';
-
-      html += '  <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.25rem 0; color: var(--text-muted); font-size: 0.82rem;">';
-      html += '    <div style="flex: 1; height: 1px; background: rgba(45, 106, 79, 0.15);"></div>';
-      html += '    <span>or</span>';
-      html += '    <div style="flex: 1; height: 1px; background: rgba(45, 106, 79, 0.15);"></div>';
-      html += '  </div>';
-
-      html += '  <button type="button" class="btn-google-login" id="btn-cust-google-login">';
-      html += '    <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;">';
-      html += '      <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7l2.76 2.13c1.61-1.49 2.54-3.69 2.54-6.46z"/>';
-      html += '      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.76-2.13c-.76.51-1.74.82-3.2.82-2.46 0-4.54-1.66-5.28-3.9L.94 12.75C2.43 15.71 5.47 18 9 18z"/>';
-      html += '      <path fill="#FBBC05" d="M3.72 10.61c-.19-.58-.3-1.2-.3-1.61s.11-1.03.3-1.61L.94 5.25C.34 6.45 0 7.8 0 9s.34 2.55.94 3.75l2.78-2.14z"/>';
-      html += '      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.47 1.05 11.43 0 9 0 5.47 0 2.43 2.29.94 5.25l2.78 2.14c.74-2.24 2.82-3.9 5.28-3.9z"/>';
-      html += '    </svg>';
-      html += '    Sign in with Google';
-      html += '  </button>';
       html += '  <p class="form-error" id="cust-login-error" role="alert" hidden style="color:#b91c1c; font-size:0.85rem; font-weight:600; margin:0;"></p>';
       html += '</form>';
       
@@ -630,11 +586,6 @@
           }
         }
       });
-
-      var custGoogleBtn = profileBody.querySelector("#btn-cust-google-login");
-      if (custGoogleBtn) {
-        custGoogleBtn.addEventListener("click", handleGoogleSignIn);
-      }
     } else {
       if (profileViewState === "main") {
         var html = '<div style="display:flex; flex-direction:column; gap:1.25rem; padding: 0.5rem 0;">';
