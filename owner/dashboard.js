@@ -493,7 +493,9 @@
     var q = (orderSearch && orderSearch.value.trim().toLowerCase()) || "";
     var st = (statusFilter && statusFilter.value) || "";
     return orders.filter(function (o) {
-      if (st && (o.status || "new") !== st) return false;
+      if (!o) return false;
+      var orderStatus = (o.status || "new").toLowerCase();
+      if (st && orderStatus !== st.toLowerCase()) return false;
       if (!q) return true;
       var blob =
         (o.id || "") +
@@ -502,7 +504,11 @@
         " " +
         (o.customer && o.customer.email) +
         " " +
-        (o.customer && o.customer.fulfillment);
+        (o.customer && o.customer.fulfillment) +
+        " " +
+        (o.customer && o.customer.delivery_partner) +
+        " " +
+        (o.customer && o.customer.tracking_id);
       return String(blob).toLowerCase().indexOf(q) !== -1;
     });
   }
@@ -590,7 +596,7 @@
     html += '<div class="status-update-box">';
     html += '  <label for="drawer-status-select">Order Status</label>';
     html += '  <select id="drawer-status-select" class="status-update-select" data-order-id="' + order.id + '">';
-    ["new", "confirmed", "processing", "shipped", "delivered", "cancelled"].forEach(function (v) {
+    ["paid", "placed", "new", "confirmed", "processing", "shipped", "delivered", "cancelled"].forEach(function (v) {
       var selected = (v === (order.status || "new")) ? "selected" : "";
       html += '    <option value="' + v + '" ' + selected + '>' + v.charAt(0).toUpperCase() + v.slice(1) + '</option>';
     });
@@ -1457,6 +1463,8 @@
           localStorage.setItem("maahi_use_real_google_oauth", useRealOAuth ? "true" : "false");
           
           window.maahiSupabase.reinit();
+          refreshOrdersData();
+          refreshCatalogData();
           
           if (dbFormSuccess) {
             dbFormSuccess.textContent = res.message || "Connected successfully!";

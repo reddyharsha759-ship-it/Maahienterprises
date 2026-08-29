@@ -7,9 +7,14 @@
 
 
   function initClient() {
-    var url = (window.MAAHI_CONFIG && window.MAAHI_CONFIG.supabaseUrl) || localStorage.getItem(URL_KEY);
-    var key = (window.MAAHI_CONFIG && window.MAAHI_CONFIG.supabaseAnonKey) || localStorage.getItem(KEY_KEY);
+    var url = localStorage.getItem(URL_KEY) || (window.MAAHI_CONFIG && window.MAAHI_CONFIG.supabaseUrl) || "";
+    var key = localStorage.getItem(KEY_KEY) || (window.MAAHI_CONFIG && window.MAAHI_CONFIG.supabaseAnonKey) || "";
     
+    // Ignore placeholder truncated keys like "eyJhbGciOiJIUzI1NiIsInR..."
+    if (key && key.indexOf("...") !== -1) {
+      key = "";
+    }
+
     if (url && key && window.supabase) {
       try {
         client = window.supabase.createClient(url, key);
@@ -38,7 +43,11 @@
       .then(function (res) {
         if (res.error) {
           var status = res.error.status;
-          if (status === 400 || status === 401 || status === 403 || status === 404 || res.error.code === "P0001" || res.error.message.indexOf("relation") !== -1) {
+          if (status === 401 || (res.error.message && res.error.message.indexOf("API key") !== -1)) {
+            // Invalid API key
+            isConnectionHealthy = false;
+          } else if (status === 400 || status === 403 || status === 404 || res.error.code === "P0001" || (res.error.message && res.error.message.indexOf("relation") !== -1)) {
+            // Reached server, schema table not created yet or RLS policy needed
             isConnectionHealthy = true;
           } else {
             isConnectionHealthy = false;
@@ -87,6 +96,10 @@
       return new Promise(function (resolve) {
         if (!window.supabase) {
           resolve({ success: false, message: "Supabase SDK not loaded in browser." });
+          return;
+        }
+        if (!key || key.indexOf("...") !== -1 || key.length < 30) {
+          resolve({ success: false, message: "Please enter your full Supabase Anon public key from Supabase Project Settings > API." });
           return;
         }
         try {

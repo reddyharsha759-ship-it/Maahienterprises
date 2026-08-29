@@ -692,6 +692,16 @@ body {
   letter-spacing: 0.04em;
 }
 
+.status-paid {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--emerald);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.status-placed {
+  background-color: rgba(96, 165, 250, 0.15);
+  color: var(--blue);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
 .status-new {
   background-color: rgba(244, 162, 97, 0.12);
   color: var(--red);
