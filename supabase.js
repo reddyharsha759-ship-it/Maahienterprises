@@ -312,17 +312,23 @@
       });
     },
 
-    // Update order status
-    updateOrderStatus: function (orderId, status) {
+    // Update order (status, customer tracking data, etc.)
+    updateOrder: function (orderId, updates) {
       return new Promise(function (resolve, reject) {
         if (!client) {
           reject(new Error("Supabase client not initialized"));
           return;
         }
 
+        var updatePayload = {};
+        if (updates.status !== undefined) updatePayload.status = updates.status;
+        if (updates.customer !== undefined) updatePayload.customer = updates.customer;
+        if (updates.subtotal !== undefined) updatePayload.subtotal = updates.subtotal;
+        if (updates.lines !== undefined) updatePayload.lines = updates.lines;
+
         client
           .from("orders")
-          .update({ status: status })
+          .update(updatePayload)
           .eq("id", orderId)
           .then(function (res) {
             if (res.error) reject(res.error);
@@ -330,6 +336,13 @@
           })
           .catch(reject);
       });
+    },
+
+    // Update order status and optional customer metadata
+    updateOrderStatus: function (orderId, status, customerUpdates) {
+      var updates = { status: status };
+      if (customerUpdates) updates.customer = customerUpdates;
+      return this.updateOrder(orderId, updates);
     },
 
     // Supabase Auth Integration

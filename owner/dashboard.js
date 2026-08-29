@@ -522,6 +522,43 @@
     }
   }
 
+  function updateOrderTracking(orderId, trackingData) {
+    return new Promise(function (resolve, reject) {
+      var orders = loadOrders();
+      var changedOrder = null;
+      orders.forEach(function (o) {
+        if (o.id === orderId) {
+          if (!o.customer) o.customer = {};
+          o.customer.delivery_partner = trackingData.delivery_partner || "";
+          o.customer.tracking_id = trackingData.tracking_id || "";
+          o.customer.tracking_url = trackingData.tracking_url || "";
+          o.statusUpdatedAt = new Date().toISOString();
+          changedOrder = o;
+        }
+      });
+
+      if (!changedOrder) {
+        reject(new Error("Order not found"));
+        return;
+      }
+
+      saveOrders(orders);
+
+      if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
+        window.maahiSupabase.updateOrder(orderId, {
+          customer: changedOrder.customer
+        }).then(function () {
+          resolve(true);
+        }).catch(function (err) {
+          console.warn("Supabase updateOrder failed, updated locally:", err);
+          resolve(true);
+        });
+      } else {
+        resolve(true);
+      }
+    });
+  }
+
   // 8. Slide-out Side Drawer Details Panel
   function openDetail(order) {
     if (!drawerBody || !orderDrawer || !drawerOverlay || !drawerTitle) return;
@@ -554,6 +591,53 @@
     if (c.razorpay_payment_id) {
       html += '  <div class="detail-row"><span class="detail-label">Razorpay ID</span><span class="detail-val mono" style="color:var(--gold); font-weight:600;">' + escapeHtml(c.razorpay_payment_id) + '</span></div>';
     }
+    html += '</section>';
+
+    // Logistics & Tracking Management (Delivery Partner & Tracking ID)
+    html += '<section class="detail-section" style="background: rgba(45, 106, 79, 0.08); border: 1px solid rgba(45, 106, 79, 0.2); border-radius: 10px; padding: 1rem;">';
+    html += '  <h3 class="detail-section-title" style="color: var(--accent); margin-bottom: 0.65rem; display: flex; align-items: center; justify-content: space-between;">';
+    html += '    <span>🚚 Delivery &amp; Tracking Details</span>';
+    if (c.tracking_id) {
+      html += '    <span style="font-size:0.72rem; background:#e8f5e9; color:#2d6a4f; padding:2px 8px; border-radius:4px; font-weight:700;">Active Tracking</span>';
+    }
+    html += '  </h3>';
+    
+    html += '  <form id="drawer-tracking-form" style="display:flex; flex-direction:column; gap:0.65rem;">';
+    
+    html += '    <div class="field" style="display:flex; flex-direction:column; gap:0.25rem;">';
+    html += '      <label for="drawer-delivery-partner" style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text);">Delivery Partner / Courier</label>';
+    html += '      <input type="text" id="drawer-delivery-partner" list="courier-list" placeholder="e.g. Delhivery, Blue Dart, DTDC, VRL Logistics" value="' + escapeHtml(c.delivery_partner || "") + '" style="width:100%; padding:0.55rem 0.75rem; border:1px solid rgba(45, 106, 79, 0.25); border-radius:6px; background:var(--bg); color:var(--text); font:inherit; font-size:0.85rem;">';
+    html += '      <datalist id="courier-list">';
+    html += '        <option value="Delhivery">';
+    html += '        <option value="Blue Dart">';
+    html += '        <option value="DTDC">';
+    html += '        <option value="VRL Logistics">';
+    html += '        <option value="India Post (Speed Post)">';
+    html += '        <option value="Shadowfax">';
+    html += '        <option value="TCI Express">';
+    html += '        <option value="Safexpress">';
+    html += '        <option value="Self / Local Fleet">';
+    html += '      </datalist>';
+    html += '    </div>';
+
+    html += '    <div class="field" style="display:flex; flex-direction:column; gap:0.25rem;">';
+    html += '      <label for="drawer-tracking-id" style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text);">Tracking ID / AWB Number</label>';
+    html += '      <input type="text" id="drawer-tracking-id" placeholder="e.g. DL123456789IN or AWB-88392" value="' + escapeHtml(c.tracking_id || "") + '" style="width:100%; padding:0.55rem 0.75rem; border:1px solid rgba(45, 106, 79, 0.25); border-radius:6px; background:var(--bg); color:var(--text); font:inherit; font-size:0.85rem; font-family:monospace;">';
+    html += '    </div>';
+
+    html += '    <div class="field" style="display:flex; flex-direction:column; gap:0.25rem;">';
+    html += '      <label for="drawer-tracking-url" style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text);">Tracking Link (Optional)</label>';
+    html += '      <input type="url" id="drawer-tracking-url" placeholder="https://www.delhivery.com/track/package/..." value="' + escapeHtml(c.tracking_url || "") + '" style="width:100%; padding:0.55rem 0.75rem; border:1px solid rgba(45, 106, 79, 0.25); border-radius:6px; background:var(--bg); color:var(--text); font:inherit; font-size:0.85rem;">';
+    html += '    </div>';
+
+    html += '    <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.35rem;">';
+    html += '      <button type="submit" class="btn-primary" id="btn-save-tracking" style="padding:0.5rem 0.85rem; font-size:0.8rem; font-weight:700; flex:1; justify-content:center;">Save Tracking Details</button>';
+    if (c.tracking_id || c.delivery_partner) {
+      html += '      <button type="button" class="btn-logout" id="btn-clear-tracking" style="padding:0.5rem 0.75rem; font-size:0.8rem; font-weight:600;">Clear</button>';
+    }
+    html += '    </div>';
+    html += '    <div id="drawer-tracking-feedback" style="font-size:0.78rem; font-weight:600; text-align:center; margin-top:0.2rem;" hidden></div>';
+    html += '  </form>';
     html += '</section>';
 
     // Customer Profile Info
@@ -638,6 +722,86 @@
       });
     }
 
+    // Attach tracking form submit handler
+    var trackingForm = drawerBody.querySelector("#drawer-tracking-form");
+    if (trackingForm) {
+      trackingForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var partnerVal = drawerBody.querySelector("#drawer-delivery-partner").value.trim();
+        var trackIdVal = drawerBody.querySelector("#drawer-tracking-id").value.trim();
+        var trackUrlVal = drawerBody.querySelector("#drawer-tracking-url").value.trim();
+        var feedback = drawerBody.querySelector("#drawer-tracking-feedback");
+        var saveBtn = drawerBody.querySelector("#btn-save-tracking");
+
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = "Saving...";
+        }
+
+        updateOrderTracking(order.id, {
+          delivery_partner: partnerVal,
+          tracking_id: trackIdVal,
+          tracking_url: trackUrlVal
+        }).then(function () {
+          if (feedback) {
+            feedback.textContent = "✓ Tracking details saved & synced to customer view!";
+            feedback.style.color = "#067d17";
+            feedback.hidden = false;
+          }
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Tracking Details";
+          }
+          renderTable();
+          setTimeout(function () {
+            var currentOrders = loadOrders();
+            var fresh = null;
+            for (var i = 0; i < currentOrders.length; i++) {
+              if (currentOrders[i].id === order.id) {
+                fresh = currentOrders[i];
+                break;
+              }
+            }
+            if (fresh) openDetail(fresh);
+          }, 800);
+        }).catch(function (err) {
+          if (feedback) {
+            feedback.textContent = "Failed to save: " + err.message;
+            feedback.style.color = "#b91c1c";
+            feedback.hidden = false;
+          }
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Tracking Details";
+          }
+        });
+      });
+
+      var clearBtn = drawerBody.querySelector("#btn-clear-tracking");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", function () {
+          if (confirm("Clear tracking info for this order?")) {
+            updateOrderTracking(order.id, {
+              delivery_partner: "",
+              tracking_id: "",
+              tracking_url: ""
+            }).then(function () {
+              var currentOrders = loadOrders();
+              var fresh = null;
+              for (var i = 0; i < currentOrders.length; i++) {
+                if (currentOrders[i].id === order.id) {
+                  fresh = currentOrders[i];
+                  break;
+                }
+              }
+              if (fresh) openDetail(fresh);
+              renderTable();
+            });
+          }
+        });
+      }
+    }
+
     // Animate display open
     orderDrawer.classList.add("is-open");
     orderDrawer.setAttribute("aria-hidden", "false");
@@ -693,16 +857,16 @@
                         c.fulfillment === "export" ? "Export" : "Quote";
       var dateLabel = c.target_date || "—";
 
-      var paymentBadge = c.razorpay_payment_id 
-        ? '<span style="display:block; margin-top:3px; padding:1px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; background:#e8f5e9; color:#2d6a4f; border:1px solid #c8e6c9;">✓ Paid • Razorpay</span>' 
-        : (st === 'paid' ? '<span style="display:block; margin-top:3px; padding:1px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; background:#e8f5e9; color:#2d6a4f;">Paid</span>' : '');
+      var trackingBadge = (c.delivery_partner || c.tracking_id)
+        ? '<div style="margin-top:4px; font-size:0.72rem; color:var(--accent); font-weight:600; display:flex; align-items:center; gap:4px; background:rgba(45,106,79,0.08); padding:2px 6px; border-radius:4px; border:1px solid rgba(45,106,79,0.18);"><span>🚚</span><span>' + escapeHtml(c.delivery_partner || 'Courier') + (c.tracking_id ? ': <code style="font-size:0.72rem; font-weight:700;">' + escapeHtml(c.tracking_id) + '</code>' : '') + '</span></div>'
+        : '';
 
       tr.innerHTML =
         '<td><span class="mono">' + escapeHtml(o.id) + '</span></td>' +
         '<td>' + escapeHtml(dt) + '</td>' +
         '<td class="customer-cell"><strong>' + escapeHtml(c.name || "—") + '</strong><span>' + escapeHtml(c.email || "") + '</span></td>' +
         '<td><span class="amount-text">' + amountVal + '</span></td>' +
-        '<td><strong>' + escapeHtml(fulfillText) + '</strong><span style="display:block; font-size:0.75rem; color:var(--text-muted);">' + escapeHtml(dateLabel) + '</span></td>' +
+        '<td><strong>' + escapeHtml(fulfillText) + '</strong><span style="display:block; font-size:0.75rem; color:var(--text-muted);">' + escapeHtml(dateLabel) + '</span>' + trackingBadge + '</td>' +
         '<td><span class="' + statusClass(st) + '">' + escapeHtml(st) + '</span>' + paymentBadge + '</td>' +
         '<td style="text-align: right;"></td>';
       

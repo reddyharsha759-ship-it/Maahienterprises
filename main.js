@@ -645,8 +645,9 @@
             }
             var statusName = o.status || "new";
             var statusPill = '<span class="status-pill status-' + statusName + '" style="font-size: 0.65rem; padding: 0.15rem 0.45rem;">' + statusName + '</span>';
+            var custInfo = o.customer || {};
             
-            html += '      <div style="background:#fdfdfc; border:1px solid rgba(45, 106, 79, 0.12); padding:0.75rem; border-radius:8px; display:flex; flex-direction:column; gap:0.5rem;">';
+            html += '      <div style="background:#fdfdfc; border:1px solid rgba(45, 106, 79, 0.12); padding:0.75rem; border-radius:8px; display:flex; flex-direction:column; gap:0.45rem;">';
             html += '        <div style="display:flex; justify-content:space-between; align-items:center;">';
             html += '          <div>';
             html += '            <strong style="display:block; font-size:0.85rem; color:var(--text);">' + escapeHtml(o.id) + '</strong>';
@@ -654,7 +655,17 @@
             html += '          </div>';
             html += '          <div>' + statusPill + '</div>';
             html += '        </div>';
-            html += '        <div style="border-top: 1px dashed rgba(0,0,0,0.06); padding-top:0.4rem; display:flex; justify-content:flex-end;">';
+
+            if (custInfo.delivery_partner || custInfo.tracking_id) {
+              html += '        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:0.3rem 0.5rem; font-size:0.75rem; color:#166534; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">';
+              html += '          <span>🚚 <strong>' + escapeHtml(custInfo.delivery_partner || 'Courier') + '</strong></span>';
+              if (custInfo.tracking_id) {
+                html += '          <span>Tracking: <code style="font-weight:700; background:#fff; padding:1px 5px; border-radius:3px; border:1px solid #86efac; font-size:0.72rem;">' + escapeHtml(custInfo.tracking_id) + '</code></span>';
+              }
+              html += '        </div>';
+            }
+
+            html += '        <div style="border-top: 1px dashed rgba(0,0,0,0.06); padding-top:0.35rem; display:flex; justify-content:flex-end;">';
             html += '          <button type="button" class="btn-track-order" data-order-id="' + o.id + '" style="background:none; border:none; padding:0; color:var(--accent); font-weight:700; text-decoration:underline; font-size:0.8rem; cursor:pointer;">Track Order &rarr;</button>';
             html += '        </div>';
             html += '      </div>';
@@ -865,13 +876,42 @@
         var isDispatched = ["shipped", "delivered"].indexOf(statusName) !== -1;
         var isDelivered = statusName === "delivered";
         var isCancelled = statusName === "cancelled";
+        var cust = order.customer || {};
         
         html += '  <div style="font-size:0.82rem; color:var(--text-muted); background:#fcfbf9; padding:0.75rem; border-radius:8px; border:1px solid rgba(45, 106, 79, 0.12); display:flex; flex-direction:column; gap:0.25rem;">';
         html += '    <div><strong>ID:</strong> <code style="font-size:0.85rem; color:var(--accent); font-weight:600;">' + escapeHtml(order.id) + '</code></div>';
         html += '    <div><strong>Date:</strong> ' + new Date(order.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" }) + '</div>';
-        html += '    <div><strong>Delivery Date:</strong> ' + escapeHtml(order.customer.target_date || "—") + '</div>';
-        html += '    <div><strong>Fulfillment:</strong> ' + escapeHtml(order.customer.fulfillment === "ship" ? "Deliver to location" : "Self-pickup/quote") + '</div>';
+        html += '    <div><strong>Delivery Date:</strong> ' + escapeHtml(cust.target_date || "—") + '</div>';
+        html += '    <div><strong>Fulfillment:</strong> ' + escapeHtml(cust.fulfillment === "ship" ? "Deliver to location" : "Self-pickup/quote") + '</div>';
         html += '  </div>';
+        
+        // Consignment Delivery Partner & Tracking Information Card
+        if (cust.delivery_partner || cust.tracking_id) {
+          html += '  <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:0.85rem 1rem;">';
+          html += '    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">';
+          html += '      <strong style="color:#166534; font-size:0.88rem; display:flex; align-items:center; gap:0.4rem;">🚚 Consignment Tracking</strong>';
+          html += '      <span style="font-size:0.7rem; background:#22c55e; color:#fff; padding:2px 7px; border-radius:4px; font-weight:700;">Dispatched</span>';
+          html += '    </div>';
+          
+          if (cust.delivery_partner) {
+            html += '    <div style="font-size:0.82rem; color:#14532d; margin-bottom:0.25rem;"><strong>Delivery Partner:</strong> <span style="font-weight:700; color:#166534;">' + escapeHtml(cust.delivery_partner) + '</span></div>';
+          }
+          
+          if (cust.tracking_id) {
+            html += '    <div style="font-size:0.82rem; color:#14532d; margin-bottom:0.45rem;"><strong>Tracking ID / AWB:</strong> <code style="background:#fff; padding:2px 6px; border-radius:4px; border:1px solid #86efac; font-weight:700; font-size:0.85rem; color:#14532d;">' + escapeHtml(cust.tracking_id) + '</code></div>';
+          }
+          
+          if (cust.tracking_url) {
+            html += '    <a href="' + escapeHtml(cust.tracking_url) + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:0.35rem; font-size:0.8rem; font-weight:700; color:#166534; text-decoration:underline;">Track Shipment Online &rarr;</a>';
+          } else {
+            html += '    <p style="margin:0; font-size:0.75rem; color:#15803d;">Your consignment has been dispatched. Quote the tracking ID with the carrier for status updates.</p>';
+          }
+          html += '  </div>';
+        } else {
+          html += '  <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:0.65rem 0.85rem; font-size:0.78rem; color:#64748b;">';
+          html += '    ℹ️ Delivery partner and tracking ID will be updated here once your order is dispatched by our logistics team.';
+          html += '  </div>';
+        }
         
         if (isCancelled) {
           html += '  <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:0.75rem; border-radius:8px; font-size:0.82rem; font-weight:600; text-align:center;">';
