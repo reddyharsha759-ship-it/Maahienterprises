@@ -228,6 +228,17 @@
   var drawerBody = document.getElementById("detail-body");
   var drawerClose = document.getElementById("detail-close");
 
+  // Invoice Drawer Elements
+  var invoiceDrawer = document.getElementById("invoice-drawer");
+  var invoiceClose = document.getElementById("invoice-close");
+  var invoiceForm = document.getElementById("invoice-form");
+  var btnCreateInvoiceOverview = document.getElementById("btn-create-invoice-overview");
+  var btnCreateInvoiceOrders = document.getElementById("btn-create-invoice-orders");
+  var btnInvAddRow = document.getElementById("btn-inv-add-row");
+  var btnCancelInvoice = document.getElementById("btn-cancel-invoice");
+  var invItemsTbody = document.getElementById("inv-items-tbody");
+  var invoiceFormError = document.getElementById("invoice-form-error");
+
   // 4. Data Layer Functions
   function loadOrders() {
     try {
@@ -582,6 +593,654 @@
     });
   }
 
+  // Number to words converter for Tax Invoices
+  function numberToWords(num) {
+    var a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    var b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    var n = ('000000000' + Math.round(num)).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return '';
+    var str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+    return (str.trim() ? 'Rupees ' + str.trim() + ' Only' : 'Rupees Zero Only');
+  }
+
+  // Printable Tax Invoice Generator
+  function printInvoice(order) {
+    if (!order) return;
+    var c = order.customer || {};
+    var lines = order.lines || [];
+    
+    var subtotal = order.subtotal || 0;
+    var discount = Number(c.discount) || 0;
+    var taxableSubtotal = Math.max(0, subtotal - discount);
+    var taxRate = Number(c.tax_rate) || 0;
+    var taxAmount = Math.round((taxableSubtotal * taxRate) / 100);
+    var shipping = Number(c.shipping) || 0;
+    var grandTotal = taxableSubtotal + taxAmount + shipping;
+
+    var cgstRate = (taxRate / 2).toFixed(1);
+    var sgstRate = (taxRate / 2).toFixed(1);
+    var cgstAmount = Math.round(taxAmount / 2);
+    var sgstAmount = taxAmount - cgstAmount;
+
+    var invoiceNum = order.id.startsWith("INV-") ? order.id : "INV-" + order.id.replace("GLC-", "");
+    var invoiceDate = formatDate(order.createdAt).split(",")[0] || new Date().toLocaleDateString();
+    var dueDate = c.target_date || c.targetDate || "Immediate / On Dispatch";
+    var status = (order.status || "new").toUpperCase();
+    var isPaid = status === "PAID";
+    var paymentMethod = (c.payment_method || (c.razorpay_payment_id ? "Razorpay Online" : "Bank Wire / NEFT")).toUpperCase();
+
+    var printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow popups in your browser to view and print the invoice.");
+      return;
+    }
+
+    var html = '<!DOCTYPE html><html><head><meta charset="utf-8">';
+    html += '<title>Tax Invoice — ' + escapeHtml(invoiceNum) + '</title>';
+    html += '<style>';
+    html += '@page { size: A4; margin: 12mm; }';
+    html += 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1c2b24; margin: 0; padding: 20px; font-size: 13px; line-height: 1.45; background: #fff; }';
+    html += '.invoice-container { max-width: 820px; margin: 0 auto; border: 1px solid #c8d8ce; padding: 25px; border-radius: 8px; box-sizing: border-box; }';
+    html += '.header-table { width: 100%; border-bottom: 2px solid #2d6a4f; padding-bottom: 12px; margin-bottom: 18px; }';
+    html += '.brand-name { font-size: 24px; font-weight: 800; color: #2d6a4f; letter-spacing: 0.5px; text-transform: uppercase; }';
+    html += '.brand-tagline { font-size: 11px; color: #40916c; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }';
+    html += '.company-details { font-size: 11px; color: #555; line-height: 1.4; text-align: right; }';
+    html += '.invoice-title-bar { display: flex; justify-content: space-between; align-items: center; background: #f2f7f4; border: 1px solid #d8e6dc; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }';
+    html += '.invoice-title { font-size: 17px; font-weight: 800; color: #1c2b24; text-transform: uppercase; }';
+    html += '.status-tag { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }';
+    html += '.status-paid { background: #e8f5e9; color: #166534; border: 1px solid #bbf7d0; }';
+    html += '.status-unpaid { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }';
+    html += '.two-col-grid { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 18px; }';
+    html += '.meta-card { flex: 1; background: #fafcfb; border: 1px solid #e0ebe3; border-radius: 6px; padding: 12px 14px; font-size: 12px; }';
+    html += '.meta-card h4 { margin: 0 0 8px 0; font-size: 11px; color: #2d6a4f; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #d8e6dc; padding-bottom: 4px; }';
+    html += '.meta-row { display: flex; justify-content: space-between; margin-bottom: 3px; }';
+    html += '.meta-label { color: #666; }';
+    html += '.meta-val { font-weight: 700; color: #1c2b24; }';
+    html += '.items-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 12px; }';
+    html += '.items-table th { background: #2d6a4f; color: #fff; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; font-weight: 700; }';
+    html += '.items-table td { padding: 8px 10px; border-bottom: 1px solid #e0ebe3; }';
+    html += '.items-table tr:nth-child(even) td { background: #fafcfb; }';
+    html += '.words-banner { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; padding: 8px 12px; font-size: 11px; font-weight: 700; color: #166534; margin-bottom: 18px; }';
+    html += '.summary-grid { display: flex; justify-content: space-between; gap: 18px; margin-bottom: 20px; }';
+    html += '.bank-details { flex: 1.2; font-size: 11px; color: #444; border: 1px dashed #2d6a4f; padding: 12px; border-radius: 6px; background: #fafcfb; line-height: 1.45; }';
+    html += '.bank-details strong { color: #2d6a4f; }';
+    html += '.calc-table { flex: 0.9; width: 100%; font-size: 12px; }';
+    html += '.calc-table td { padding: 3px 6px; }';
+    html += '.calc-table .grand-total td { font-size: 15px; font-weight: 800; color: #2d6a4f; border-top: 2px solid #2d6a4f; border-bottom: 2px solid #2d6a4f; padding: 6px 6px; }';
+    html += '.footer-table { width: 100%; margin-top: 20px; border-top: 1px solid #e0ebe3; padding-top: 14px; font-size: 11px; color: #666; }';
+    html += '.signatory-box { text-align: right; }';
+    html += '.sign-line { display: inline-block; width: 160px; border-top: 1px solid #333; margin-top: 35px; }';
+    html += '@media print { body { padding: 0; background: none; } .invoice-container { border: none; padding: 0; } .no-print { display: none; } }';
+    html += '</style></head><body>';
+
+    html += '<div class="no-print" style="max-width:820px; margin:0 auto 12px; text-align:right;">';
+    html += '  <button onclick="window.print()" style="background:#2d6a4f; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.15);">🖨️ Print / Download PDF</button>';
+    html += '  <button onclick="window.close()" style="background:#f3f4f6; color:#374151; border:1px solid #d1d5db; padding:8px 14px; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer; margin-left:8px;">Close</button>';
+    html += '</div>';
+
+    html += '<div class="invoice-container">';
+
+    // Header Table
+    html += '  <table class="header-table">';
+    html += '    <tr>';
+    html += '      <td style="vertical-align: top;">';
+    html += '        <div class="brand-name">MAAHI PRODUCTS</div>';
+    html += '        <div class="brand-tagline">Sustainable Cocopeat &amp; Coir Media</div>';
+    html += '        <div style="font-size:11px; color:#555; margin-top:4px;">GSTIN: <strong>33AACFM1234F1Z9</strong> (Registered)</div>';
+    html += '      </td>';
+    html += '      <td class="company-details">';
+    html += '        <strong>MAAHI ENTERPRISES</strong><br>';
+    html += '        Premium Cocopeat Manufacturing &amp; Supply<br>';
+    html += '        Coimbatore / Tirupur Hub, Tamil Nadu — India<br>';
+    html += '        Email: Maahienterprises6468@gmail.com | Phone: +91 94801 82959<br>';
+    html += '        Web: maahienterprises.in';
+    html += '      </td>';
+    html += '    </tr>';
+    html += '  </table>';
+
+    // Title Bar
+    html += '  <div class="invoice-title-bar">';
+    html += '    <div>';
+    html += '      <span class="invoice-title">TAX INVOICE</span>';
+    html += '      <span style="font-size:12px; color:#666; margin-left:8px;"># ' + escapeHtml(invoiceNum) + '</span>';
+    html += '    </div>';
+    html += '    <div>';
+    html += '      <span class="status-tag ' + (isPaid ? 'status-paid' : 'status-unpaid') + '">' + (isPaid ? '✓ PAID' : 'PENDING PAYMENT') + '</span>';
+    html += '    </div>';
+    html += '  </div>';
+
+    // 2-Column Meta & Customer Grid
+    html += '  <div class="two-col-grid">';
+    
+    // Billed To
+    html += '    <div class="meta-card">';
+    html += '      <h4>Billed &amp; Shipped To</h4>';
+    html += '      <div style="font-size:13px; font-weight:700; color:#1c2b24; margin-bottom:2px;">' + escapeHtml(c.name || "Customer") + '</div>';
+    if (c.phone) html += '      <div>Phone: ' + escapeHtml(c.phone) + '</div>';
+    if (c.email) html += '      <div>Email: ' + escapeHtml(c.email) + '</div>';
+    if (c.gstin) html += '      <div>GSTIN: <strong>' + escapeHtml(c.gstin) + '</strong></div>';
+    if (c.address) {
+      html += '      <div style="margin-top:4px; color:#444; line-height:1.35;">' + escapeHtml(c.address).replace(/\n/g, "<br>") + '</div>';
+    }
+    html += '    </div>';
+
+    // Invoice Meta
+    html += '    <div class="meta-card">';
+    html += '      <h4>Invoice Information</h4>';
+    html += '      <div class="meta-row"><span class="meta-label">Invoice Number:</span><span class="meta-val">' + escapeHtml(invoiceNum) + '</span></div>';
+    html += '      <div class="meta-row"><span class="meta-label">Invoice Date:</span><span class="meta-val">' + escapeHtml(invoiceDate) + '</span></div>';
+    html += '      <div class="meta-row"><span class="meta-label">Delivery Due Date:</span><span class="meta-val">' + escapeHtml(dueDate) + '</span></div>';
+    html += '      <div class="meta-row"><span class="meta-label">Payment Mode:</span><span class="meta-val">' + escapeHtml(paymentMethod) + '</span></div>';
+    if (c.razorpay_payment_id) {
+      html += '      <div class="meta-row"><span class="meta-label">Razorpay Ref:</span><span class="meta-val" style="font-family:monospace;">' + escapeHtml(c.razorpay_payment_id) + '</span></div>';
+    }
+    if (c.delivery_partner || c.tracking_id) {
+      html += '      <div class="meta-row"><span class="meta-label">Courier Tracking:</span><span class="meta-val">' + escapeHtml((c.delivery_partner || "Courier") + ": " + (c.tracking_id || "Dispatched")) + '</span></div>';
+    }
+    html += '    </div>';
+    html += '  </div>';
+
+    // Items Table
+    html += '  <table class="items-table">';
+    html += '    <thead>';
+    html += '      <tr>';
+    html += '        <th style="width:5%;">#</th>';
+    html += '        <th style="width:45%;">Item Description</th>';
+    html += '        <th style="width:14%; text-align:right;">Rate (₹)</th>';
+    html += '        <th style="width:10%; text-align:center;">Qty</th>';
+    html += '        <th style="width:13%; text-align:right;">Taxable (₹)</th>';
+    html += '        <th style="width:13%; text-align:right;">Amount (₹)</th>';
+    html += '      </tr>';
+    html += '    </thead>';
+    html += '    <tbody>';
+
+    lines.forEach(function (l, idx) {
+      var itemPrice = Number(l.unitPrice || l.price) || 0;
+      var itemQty = Number(l.qty || l.quantity) || 1;
+      var itemTotal = l.lineTotal != null ? Number(l.lineTotal) : (itemPrice * itemQty);
+
+      html += '      <tr>';
+      html += '        <td>' + (idx + 1) + '</td>';
+      html += '        <td><strong>' + escapeHtml(l.title || l.name || l.id) + '</strong></td>';
+      html += '        <td style="text-align:right;">₹' + itemPrice.toLocaleString("en-IN") + '</td>';
+      html += '        <td style="text-align:center;">' + itemQty + '</td>';
+      html += '        <td style="text-align:right;">₹' + itemTotal.toLocaleString("en-IN") + '</td>';
+      html += '        <td style="text-align:right; font-weight:700;">₹' + itemTotal.toLocaleString("en-IN") + '</td>';
+      html += '      </tr>';
+    });
+
+    html += '    </tbody>';
+    html += '  </table>';
+
+    // Amount in Words
+    html += '  <div class="words-banner">';
+    html += '    <strong>Amount in Words:</strong> ' + escapeHtml(numberToWords(grandTotal));
+    html += '  </div>';
+
+    // Summary & Bank Details Grid
+    html += '  <div class="summary-grid">';
+    
+    // Bank Instructions
+    html += '    <div class="bank-details">';
+    html += '      <strong>Bank Account Details for Wire / NEFT Transfer:</strong><br>';
+    html += '      Bank Name: <strong>State Bank of India</strong><br>';
+    html += '      Account Name: <strong>MAAHI ENTERPRISES</strong><br>';
+    html += '      Account No: <strong>41289056214</strong><br>';
+    html += '      IFSC Code: <strong>SBIN0001234</strong><br>';
+    html += '      UPI ID: <strong>maahi.enterprises@sbi</strong>';
+    if (c.notes) {
+      html += '      <div style="margin-top:8px; padding-top:6px; border-top:1px dashed #d0ded6;">';
+      html += '        <strong>Terms / Notes:</strong> ' + escapeHtml(c.notes);
+      html += '      </div>';
+    }
+    html += '    </div>';
+
+    // Calculations
+    html += '    <div>';
+    html += '      <table class="calc-table">';
+    html += '        <tr><td>Items Subtotal:</td><td style="text-align:right; font-weight:600;">₹' + subtotal.toLocaleString("en-IN") + '</td></tr>';
+    if (discount > 0) {
+      html += '        <tr><td>Discount:</td><td style="text-align:right; color:#b91c1c;">-₹' + discount.toLocaleString("en-IN") + '</td></tr>';
+    }
+    if (taxRate > 0) {
+      html += '        <tr><td>CGST (' + cgstRate + '%):</td><td style="text-align:right;">₹' + cgstAmount.toLocaleString("en-IN") + '</td></tr>';
+      html += '        <tr><td>SGST (' + sgstRate + '%):</td><td style="text-align:right;">₹' + sgstAmount.toLocaleString("en-IN") + '</td></tr>';
+    } else {
+      html += '        <tr><td>GST Tax:</td><td style="text-align:right; color:#666;">Exempt (0%)</td></tr>';
+    }
+    if (shipping > 0) {
+      html += '        <tr><td>Shipping / Handling:</td><td style="text-align:right;">₹' + shipping.toLocaleString("en-IN") + '</td></tr>';
+    }
+    html += '        <tr class="grand-total"><td>Total Payable:</td><td style="text-align:right;">₹' + grandTotal.toLocaleString("en-IN") + '</td></tr>';
+    html += '      </table>';
+    html += '    </div>';
+    html += '  </div>';
+
+    // Footer Table
+    html += '  <table class="footer-table">';
+    html += '    <tr>';
+    html += '      <td style="vertical-align: bottom;">';
+    html += '        <strong>Terms &amp; Conditions:</strong><br>';
+    html += '        1. 100% natural, washed and sterilized organic growth media.<br>';
+    html += '        2. Dispatched goods are covered under agricultural export standards.<br>';
+    html += '        3. Subject to Coimbatore jurisdiction.';
+    html += '      </td>';
+    html += '      <td class="signatory-box" style="vertical-align: bottom;">';
+    html += '        <strong>For MAAHI ENTERPRISES</strong><br>';
+    html += '        <div class="sign-line"></div><br>';
+    html += '        <span>Authorized Signatory</span>';
+    html += '      </td>';
+    html += '    </tr>';
+    html += '  </table>';
+
+    html += '</div>';
+
+    html += '<script>';
+    html += 'window.onload = function() { setTimeout(function() { window.print(); }, 400); };';
+    html += '</script>';
+
+    html += '</body></html>';
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+
+  // --- INVOICE DRAWER CONTROLLER ---
+
+  function showInvoiceError(msg) {
+    if (!invoiceFormError) return;
+    invoiceFormError.textContent = msg;
+    invoiceFormError.hidden = false;
+  }
+
+  function hideInvoiceError() {
+    if (!invoiceFormError) return;
+    invoiceFormError.textContent = "";
+    invoiceFormError.hidden = true;
+  }
+
+  function addInvoiceItemRow(item) {
+    if (!invItemsTbody) return;
+    item = item || {};
+    var catalog = loadCatalog();
+    var catKeys = Object.keys(catalog);
+
+    var tr = document.createElement("tr");
+
+    var tdTitle = document.createElement("td");
+    var selectTitle = document.createElement("select");
+    selectTitle.className = "inv-item-select";
+    selectTitle.style.marginBottom = "4px";
+
+    var defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = "— Select Catalog Product —";
+    selectTitle.appendChild(defaultOpt);
+
+    catKeys.forEach(function (k) {
+      var prod = catalog[k];
+      var opt = document.createElement("option");
+      opt.value = k;
+      opt.textContent = (prod.title || k) + " (₹" + (prod.price || 0) + ")";
+      if (item.id === k || (item.title && prod.title && item.title.toLowerCase() === prod.title.toLowerCase())) {
+        opt.selected = true;
+      }
+      selectTitle.appendChild(opt);
+    });
+
+    var customOpt = document.createElement("option");
+    customOpt.value = "custom";
+    customOpt.textContent = "Custom Item / Service";
+    selectTitle.appendChild(customOpt);
+
+    var titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.className = "inv-item-title";
+    titleInput.placeholder = "Item title / description";
+    titleInput.value = item.title || "";
+    titleInput.required = true;
+
+    tdTitle.appendChild(selectTitle);
+    tdTitle.appendChild(titleInput);
+
+    var tdPrice = document.createElement("td");
+    var priceInput = document.createElement("input");
+    priceInput.type = "number";
+    priceInput.className = "inv-item-price";
+    priceInput.min = "0";
+    priceInput.value = item.unitPrice != null ? item.unitPrice : (item.price != null ? item.price : 0);
+    priceInput.style.textAlign = "right";
+    tdPrice.appendChild(priceInput);
+
+    var tdQty = document.createElement("td");
+    var qtyInput = document.createElement("input");
+    qtyInput.type = "number";
+    qtyInput.className = "inv-item-qty";
+    qtyInput.min = "1";
+    qtyInput.value = item.qty || item.quantity || 1;
+    qtyInput.style.textAlign = "center";
+    tdQty.appendChild(qtyInput);
+
+    var tdTotal = document.createElement("td");
+    tdTotal.className = "inv-item-total";
+    tdTotal.style.textAlign = "right";
+    tdTotal.style.fontWeight = "700";
+    tdTotal.style.color = "var(--gold)";
+    tdTotal.textContent = "₹0";
+
+    var tdRemove = document.createElement("td");
+    tdRemove.style.textAlign = "center";
+    var removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn-remove-row";
+    removeBtn.innerHTML = "×";
+    removeBtn.title = "Remove item";
+    removeBtn.addEventListener("click", function () {
+      tr.remove();
+      calcInvoiceTotals();
+    });
+    tdRemove.appendChild(removeBtn);
+
+    selectTitle.addEventListener("change", function () {
+      var selVal = selectTitle.value;
+      if (selVal && selVal !== "custom" && catalog[selVal]) {
+        titleInput.value = catalog[selVal].title;
+        priceInput.value = catalog[selVal].price || 0;
+      }
+      calcInvoiceTotals();
+    });
+
+    titleInput.addEventListener("input", calcInvoiceTotals);
+    priceInput.addEventListener("input", calcInvoiceTotals);
+    qtyInput.addEventListener("input", calcInvoiceTotals);
+
+    tr.appendChild(tdTitle);
+    tr.appendChild(tdPrice);
+    tr.appendChild(tdQty);
+    tr.appendChild(tdTotal);
+    tr.appendChild(tdRemove);
+
+    invItemsTbody.appendChild(tr);
+    calcInvoiceTotals();
+  }
+
+  function calcInvoiceTotals() {
+    if (!invItemsTbody) return;
+    var rows = invItemsTbody.querySelectorAll("tr");
+    var subtotal = 0;
+
+    rows.forEach(function (tr) {
+      var priceInput = tr.querySelector(".inv-item-price");
+      var qtyInput = tr.querySelector(".inv-item-qty");
+      var totalCell = tr.querySelector(".inv-item-total");
+      if (!priceInput || !qtyInput || !totalCell) return;
+
+      var p = Number(priceInput.value) || 0;
+      var q = Number(qtyInput.value) || 1;
+      var rowTotal = p * q;
+      subtotal += rowTotal;
+      totalCell.textContent = "₹" + rowTotal.toLocaleString("en-IN");
+    });
+
+    var taxRateEl = document.getElementById("inv-tax-rate");
+    var discountEl = document.getElementById("inv-discount");
+    var shippingEl = document.getElementById("inv-shipping");
+
+    var taxRate = taxRateEl ? Number(taxRateEl.value) || 0 : 0;
+    var discount = discountEl ? Number(discountEl.value) || 0 : 0;
+    var shipping = shippingEl ? Number(shippingEl.value) || 0 : 0;
+
+    var taxable = Math.max(0, subtotal - discount);
+    var taxAmount = Math.round((taxable * taxRate) / 100);
+    var grandTotal = taxable + taxAmount + shipping;
+
+    var calcSubtotal = document.getElementById("inv-calc-subtotal");
+    var calcDiscount = document.getElementById("inv-calc-discount");
+    var calcTax = document.getElementById("inv-calc-tax");
+    var calcShipping = document.getElementById("inv-calc-shipping");
+    var calcGrandTotal = document.getElementById("inv-calc-grand-total");
+
+    var rowDiscount = document.getElementById("inv-row-discount");
+    var rowTax = document.getElementById("inv-row-tax");
+    var rowShipping = document.getElementById("inv-row-shipping");
+
+    if (calcSubtotal) calcSubtotal.textContent = "₹" + subtotal.toLocaleString("en-IN");
+    if (calcDiscount) calcDiscount.textContent = "-₹" + discount.toLocaleString("en-IN");
+    if (calcTax) calcTax.textContent = "₹" + taxAmount.toLocaleString("en-IN") + (taxRate > 0 ? " (" + taxRate + "%)" : "");
+    if (calcShipping) calcShipping.textContent = "₹" + shipping.toLocaleString("en-IN");
+    if (calcGrandTotal) calcGrandTotal.textContent = "₹" + grandTotal.toLocaleString("en-IN");
+
+    if (rowDiscount) rowDiscount.style.display = discount > 0 ? "flex" : "none";
+    if (rowTax) rowTax.style.display = taxRate > 0 ? "flex" : "none";
+    if (rowShipping) rowShipping.style.display = shipping > 0 ? "flex" : "none";
+  }
+
+  function openInvoiceDrawer(orderToEdit) {
+    if (!invoiceDrawer || !drawerOverlay) return;
+    hideInvoiceError();
+
+    var titleEl = document.getElementById("invoice-drawer-title");
+    var badgeEl = document.getElementById("invoice-badge-status");
+
+    if (invItemsTbody) invItemsTbody.innerHTML = "";
+
+    if (orderToEdit) {
+      if (titleEl) titleEl.textContent = "Edit Invoice — " + orderToEdit.id;
+      if (badgeEl) {
+        badgeEl.textContent = (orderToEdit.status || "new").toUpperCase();
+        badgeEl.className = "status-pill status-" + (orderToEdit.status || "new");
+      }
+
+      var c = orderToEdit.customer || {};
+      document.getElementById("inv-id").value = orderToEdit.id || "";
+      document.getElementById("inv-id").readOnly = true;
+      document.getElementById("inv-date").value = orderToEdit.createdAt ? orderToEdit.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10);
+      document.getElementById("inv-due-date").value = c.target_date || "";
+      document.getElementById("inv-cust-name").value = c.name || "";
+      document.getElementById("inv-cust-phone").value = c.phone || "";
+      document.getElementById("inv-cust-email").value = c.email || "";
+      document.getElementById("inv-cust-gstin").value = c.gstin || "";
+      document.getElementById("inv-cust-address").value = c.address || "";
+      document.getElementById("inv-status").value = orderToEdit.status || "new";
+      document.getElementById("inv-payment-method").value = c.payment_method || (c.razorpay_payment_id ? "razorpay" : "bank_transfer");
+      document.getElementById("inv-fulfillment").value = c.fulfillment || "ship";
+      document.getElementById("inv-tax-rate").value = c.tax_rate != null ? c.tax_rate : "0";
+      document.getElementById("inv-discount").value = c.discount || 0;
+      document.getElementById("inv-shipping").value = c.shipping || 0;
+      document.getElementById("inv-delivery-partner").value = c.delivery_partner || "";
+      document.getElementById("inv-tracking-id").value = c.tracking_id || "";
+      document.getElementById("inv-notes").value = c.notes || "";
+
+      var lines = orderToEdit.lines || [];
+      if (lines.length > 0) {
+        lines.forEach(function (l) {
+          addInvoiceItemRow(l);
+        });
+      } else {
+        addInvoiceItemRow();
+      }
+    } else {
+      if (titleEl) titleEl.textContent = "Create Tax Invoice";
+      if (badgeEl) {
+        badgeEl.textContent = "DRAFT";
+        badgeEl.className = "status-pill status-new";
+      }
+
+      var randId = "INV-" + new Date().getFullYear() + "-" + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById("inv-id").value = randId;
+      document.getElementById("inv-id").readOnly = false;
+      document.getElementById("inv-date").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("inv-due-date").value = "";
+      document.getElementById("inv-cust-name").value = "";
+      document.getElementById("inv-cust-phone").value = "";
+      document.getElementById("inv-cust-email").value = "";
+      document.getElementById("inv-cust-gstin").value = "";
+      document.getElementById("inv-cust-address").value = "";
+      document.getElementById("inv-status").value = "new";
+      document.getElementById("inv-payment-method").value = "bank_transfer";
+      document.getElementById("inv-fulfillment").value = "ship";
+      document.getElementById("inv-tax-rate").value = "0";
+      document.getElementById("inv-discount").value = "0";
+      document.getElementById("inv-shipping").value = "0";
+      document.getElementById("inv-delivery-partner").value = "";
+      document.getElementById("inv-tracking-id").value = "";
+      document.getElementById("inv-notes").value = "";
+
+      addInvoiceItemRow();
+    }
+
+    calcInvoiceTotals();
+
+    invoiceDrawer.style.display = "flex";
+    setTimeout(function () {
+      invoiceDrawer.classList.add("is-open");
+      invoiceDrawer.setAttribute("aria-hidden", "false");
+      drawerOverlay.classList.add("is-visible");
+      drawerOverlay.setAttribute("aria-hidden", "false");
+    }, 10);
+  }
+
+  function closeInvoiceDrawer() {
+    if (invoiceDrawer) {
+      invoiceDrawer.classList.remove("is-open");
+      invoiceDrawer.setAttribute("aria-hidden", "true");
+      setTimeout(function () {
+        invoiceDrawer.style.display = "none";
+      }, 350);
+    }
+    if (drawerOverlay) {
+      drawerOverlay.classList.remove("is-visible");
+      drawerOverlay.setAttribute("aria-hidden", "true");
+    }
+    hideInvoiceError();
+  }
+
+  function handleInvoiceFormSubmit(e) {
+    if (e) e.preventDefault();
+    hideInvoiceError();
+
+    var invId = document.getElementById("inv-id").value.trim();
+    var invDate = document.getElementById("inv-date").value;
+    var invTargetDate = document.getElementById("inv-due-date").value;
+    var custName = document.getElementById("inv-cust-name").value.trim();
+    var custPhone = document.getElementById("inv-cust-phone").value.trim();
+    var custEmail = document.getElementById("inv-cust-email").value.trim();
+    var custGstin = document.getElementById("inv-cust-gstin").value.trim();
+    var custAddress = document.getElementById("inv-cust-address").value.trim();
+    var invStatus = document.getElementById("inv-status").value;
+    var invPaymentMethod = document.getElementById("inv-payment-method").value;
+    var invFulfillment = document.getElementById("inv-fulfillment").value;
+    var invTaxRate = Number(document.getElementById("inv-tax-rate").value) || 0;
+    var invDiscount = Number(document.getElementById("inv-discount").value) || 0;
+    var invShipping = Number(document.getElementById("inv-shipping").value) || 0;
+    var invDeliveryPartner = document.getElementById("inv-delivery-partner").value.trim();
+    var invTrackingId = document.getElementById("inv-tracking-id").value.trim();
+    var invNotes = document.getElementById("inv-notes").value.trim();
+
+    if (!invId) {
+      showInvoiceError("Please enter an Invoice / Order ID.");
+      return;
+    }
+    if (!custName) {
+      showInvoiceError("Please enter Customer / Company Name.");
+      return;
+    }
+
+    var rowEls = invItemsTbody ? invItemsTbody.querySelectorAll("tr") : [];
+    var lines = [];
+    var itemsSubtotal = 0;
+
+    rowEls.forEach(function (tr) {
+      var titleInput = tr.querySelector(".inv-item-title");
+      var priceInput = tr.querySelector(".inv-item-price");
+      var qtyInput = tr.querySelector(".inv-item-qty");
+      if (!titleInput || !priceInput || !qtyInput) return;
+
+      var title = titleInput.value.trim();
+      var price = Number(priceInput.value) || 0;
+      var qty = Number(qtyInput.value) || 1;
+      if (!title) return;
+
+      var total = price * qty;
+      itemsSubtotal += total;
+      lines.push({
+        id: title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        title: title,
+        unitPrice: price,
+        qty: qty,
+        lineTotal: total
+      });
+    });
+
+    if (lines.length === 0) {
+      showInvoiceError("Please add at least one line item with a title and price.");
+      return;
+    }
+
+    var taxableSubtotal = Math.max(0, itemsSubtotal - invDiscount);
+    var taxAmount = Math.round((taxableSubtotal * invTaxRate) / 100);
+    var grandTotal = taxableSubtotal + taxAmount + invShipping;
+
+    var orderPayload = {
+      id: invId,
+      createdAt: invDate ? new Date(invDate).toISOString() : new Date().toISOString(),
+      status: invStatus,
+      subtotal: grandTotal,
+      lines: lines,
+      customer: {
+        name: custName,
+        phone: custPhone,
+        email: custEmail,
+        gstin: custGstin,
+        address: custAddress,
+        fulfillment: invFulfillment,
+        payment_method: invPaymentMethod,
+        target_date: invTargetDate,
+        tax_rate: invTaxRate,
+        tax_amount: taxAmount,
+        discount: invDiscount,
+        shipping: invShipping,
+        delivery_partner: invDeliveryPartner,
+        tracking_id: invTrackingId,
+        notes: invNotes,
+        is_manual_invoice: true
+      }
+    };
+
+    var orders = loadOrders();
+    var existingIdx = -1;
+    for (var i = 0; i < orders.length; i++) {
+      if (orders[i].id === invId) {
+        existingIdx = i;
+        break;
+      }
+    }
+
+    if (existingIdx !== -1) {
+      orders[existingIdx] = orderPayload;
+    } else {
+      orders.unshift(orderPayload);
+    }
+
+    saveOrders(orders);
+
+    if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
+      window.maahiSupabase.saveOrder(orderPayload).catch(function (err) {
+        console.warn("Supabase saveOrder failed for invoice:", err);
+      });
+    }
+
+    closeInvoiceDrawer();
+    renderTable();
+    printInvoice(orderPayload);
+  }
+
   // 8. Slide-out Side Drawer Details Panel
   function openDetail(order) {
     if (!drawerBody || !orderDrawer || !drawerOverlay || !drawerTitle) return;
@@ -721,9 +1380,29 @@
     html += '    <span>Subtotal</span>';
     html += '    <span class="drawer-subtotal-val">' + formatMoney(order.subtotal) + '</span>';
     html += '  </div>';
+    html += '  <div style="margin-top: 1.25rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">';
+    html += '    <button type="button" class="btn-primary" id="btn-print-drawer-invoice" style="flex: 1.2; justify-content: center; padding: 0.65rem 0.85rem; font-weight: 700;">🧾 Print Tax Invoice</button>';
+    html += '    <button type="button" class="btn-logout" id="btn-edit-drawer-invoice" style="flex: 0.8; justify-content: center; padding: 0.65rem 0.85rem; font-weight: 600;">✏️ Edit Invoice</button>';
+    html += '  </div>';
     html += '</section>';
 
     drawerBody.innerHTML = html;
+
+    // Attach invoice print & edit handlers
+    var printInvoiceBtn = drawerBody.querySelector("#btn-print-drawer-invoice");
+    if (printInvoiceBtn) {
+      printInvoiceBtn.addEventListener("click", function () {
+        printInvoice(order);
+      });
+    }
+
+    var editInvoiceBtn = drawerBody.querySelector("#btn-edit-drawer-invoice");
+    if (editInvoiceBtn) {
+      editInvoiceBtn.addEventListener("click", function () {
+        closeDetail();
+        openInvoiceDrawer(order);
+      });
+    }
 
     // Attach local selector action change
     var statusSelect = drawerBody.querySelector("#drawer-status-select");
@@ -898,6 +1577,21 @@
         '<td style="text-align: right;"></td>';
       
       var actionCell = tr.querySelector("td:last-child");
+      actionCell.style.display = "flex";
+      actionCell.style.gap = "0.35rem";
+      actionCell.style.justifyContent = "flex-end";
+      actionCell.style.flexWrap = "nowrap";
+
+      var invBtn = document.createElement("button");
+      invBtn.type = "button";
+      invBtn.className = "btn-invoice-print";
+      invBtn.innerHTML = "🧾 Invoice";
+      invBtn.title = "Print / Download Tax Invoice";
+      invBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        printInvoice(o);
+      });
+
       var viewBtn = document.createElement("button");
       viewBtn.type = "button";
       viewBtn.className = "btn-small";
@@ -906,6 +1600,7 @@
         openDetail(o);
       });
       
+      actionCell.appendChild(invBtn);
       actionCell.appendChild(viewBtn);
       tbody.appendChild(tr);
     });
@@ -960,6 +1655,21 @@
         '<td style="text-align: right;"></td>';
 
       var actionCell = tr.querySelector("td:last-child");
+      actionCell.style.display = "flex";
+      actionCell.style.gap = "0.35rem";
+      actionCell.style.justifyContent = "flex-end";
+      actionCell.style.flexWrap = "nowrap";
+
+      var invBtn = document.createElement("button");
+      invBtn.type = "button";
+      invBtn.className = "btn-invoice-print";
+      invBtn.innerHTML = "🧾 Invoice";
+      invBtn.title = "Print / Download Tax Invoice";
+      invBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        printInvoice(o);
+      });
+
       var viewBtn = document.createElement("button");
       viewBtn.type = "button";
       viewBtn.className = "btn-small";
@@ -968,6 +1678,7 @@
         openDetail(o);
       });
 
+      actionCell.appendChild(invBtn);
       actionCell.appendChild(viewBtn);
       overviewTbody.appendChild(tr);
     });
@@ -1621,6 +2332,7 @@
     drawerOverlay.addEventListener("click", function () {
       closeDetail();
       closeProductDrawer();
+      closeInvoiceDrawer();
     });
   }
 
@@ -1632,8 +2344,50 @@
       if (productDrawer && productDrawer.classList.contains("is-open")) {
         closeProductDrawer();
       }
+      if (invoiceDrawer && invoiceDrawer.classList.contains("is-open")) {
+        closeInvoiceDrawer();
+      }
     }
   });
+
+  // Invoice Drawer Listeners
+  if (btnCreateInvoiceOverview) {
+    btnCreateInvoiceOverview.addEventListener("click", function () {
+      openInvoiceDrawer();
+    });
+  }
+
+  if (btnCreateInvoiceOrders) {
+    btnCreateInvoiceOrders.addEventListener("click", function () {
+      openInvoiceDrawer();
+    });
+  }
+
+  if (invoiceClose) {
+    invoiceClose.addEventListener("click", closeInvoiceDrawer);
+  }
+
+  if (btnCancelInvoice) {
+    btnCancelInvoice.addEventListener("click", closeInvoiceDrawer);
+  }
+
+  if (btnInvAddRow) {
+    btnInvAddRow.addEventListener("click", function () {
+      addInvoiceItemRow();
+    });
+  }
+
+  if (invoiceForm) {
+    invoiceForm.addEventListener("submit", handleInvoiceFormSubmit);
+  }
+
+  var invTaxRateEl = document.getElementById("inv-tax-rate");
+  var invDiscountEl = document.getElementById("inv-discount");
+  var invShippingEl = document.getElementById("inv-shipping");
+
+  if (invTaxRateEl) invTaxRateEl.addEventListener("change", calcInvoiceTotals);
+  if (invDiscountEl) invDiscountEl.addEventListener("input", calcInvoiceTotals);
+  if (invShippingEl) invShippingEl.addEventListener("input", calcInvoiceTotals);
 
   if (btnAddProduct) {
     btnAddProduct.addEventListener("click", function () {

@@ -102,7 +102,13 @@
             <h1>Dashboard Overview</h1>
             <p class="topbar-subtitle">Real-time tracking of organic media sales and logistics.</p>
           </div>
-          <div class="topbar-right">
+          <div class="topbar-right" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn-primary" id="btn-create-invoice-overview" style="background: linear-gradient(135deg, var(--accent), #2d6a4f); color: #fff; font-weight: 700;" title="Create new custom invoice or order">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              + Create Invoice
+            </button>
             <button type="button" class="btn-primary" id="btn-refresh-overview" title="Refresh & Sync Orders with Database">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -184,6 +190,12 @@
             <p class="topbar-subtitle">Track, filter, and update customer order fulfillment status.</p>
           </div>
           <div class="topbar-right" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn-primary" id="btn-create-invoice-orders" style="background: linear-gradient(135deg, var(--accent), #2d6a4f); color: #fff; font-weight: 700;" title="Create new custom invoice or order">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              + Create Invoice
+            </button>
             <button type="button" class="btn-primary" id="btn-refresh-orders" title="Refresh & Sync Orders with Database">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -529,6 +541,216 @@ create policy "Allow public write access to orders" on public.orders for all usi
       </div>
       
       <p class="form-error" id="product-form-error" role="alert" hidden style="margin-top: 1rem; color: var(--red); font-size: 0.85rem; font-weight:600;"></p>
+    </form>
+  </aside>
+
+  <!-- Slide-out side drawer for Create / Edit Invoice -->
+  <aside class="invoice-drawer" id="invoice-drawer" aria-labelledby="invoice-drawer-title" aria-hidden="true" style="display: none;">
+    <div class="drawer-header">
+      <div>
+        <span class="drawer-subtitle">Billing &amp; Invoicing</span>
+        <h2 id="invoice-drawer-title" class="drawer-title">Create Tax Invoice</h2>
+      </div>
+      <button type="button" class="drawer-close-btn" id="invoice-close" aria-label="Close invoice drawer">×</button>
+    </div>
+    
+    <form class="drawer-body" id="invoice-form" novalidate style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+      
+      <!-- Invoice Meta Section -->
+      <section>
+        <div class="invoice-section-title">
+          <span>🧾 Invoice Details</span>
+          <span id="invoice-badge-status" class="status-pill status-new" style="font-size: 0.68rem;">Draft</span>
+        </div>
+        <div class="invoice-form-grid">
+          <div class="field">
+            <label for="inv-id">Invoice / Order ID <span class="req">*</span></label>
+            <input type="text" id="inv-id" name="id" required placeholder="e.g. INV-2026-001" style="font-family: monospace; font-weight: 700;">
+          </div>
+          <div class="field">
+            <label for="inv-date">Invoice Date <span class="req">*</span></label>
+            <input type="date" id="inv-date" name="date" required>
+          </div>
+          <div class="field">
+            <label for="inv-due-date">Target Delivery / Due Date</label>
+            <input type="date" id="inv-due-date" name="target_date">
+          </div>
+        </div>
+      </section>
+
+      <!-- Customer Details Section -->
+      <section>
+        <div class="invoice-section-title">
+          <span>👤 Customer &amp; Billing Details</span>
+        </div>
+        <div class="invoice-form-grid">
+          <div class="field">
+            <label for="inv-cust-name">Customer / Company Name <span class="req">*</span></label>
+            <input type="text" id="inv-cust-name" name="customer_name" required placeholder="e.g. John Doe / Green Farms Agro">
+          </div>
+          <div class="field">
+            <label for="inv-cust-phone">Phone Number</label>
+            <input type="tel" id="inv-cust-phone" name="customer_phone" placeholder="e.g. +91 98765 43210">
+          </div>
+          <div class="field">
+            <label for="inv-cust-email">Email Address</label>
+            <input type="email" id="inv-cust-email" name="customer_email" placeholder="e.g. client@example.com">
+          </div>
+          <div class="field">
+            <label for="inv-cust-gstin">Customer GSTIN (Optional B2B)</label>
+            <input type="text" id="inv-cust-gstin" name="customer_gstin" placeholder="e.g. 33AAAAA0000A1Z5" style="text-transform: uppercase;">
+          </div>
+        </div>
+        <div class="field" style="margin-top: 0.65rem;">
+          <label for="inv-cust-address">Full Billing &amp; Shipping Address</label>
+          <textarea id="inv-cust-address" name="customer_address" rows="2" placeholder="Street, landmark, city, state, pincode..."></textarea>
+        </div>
+      </section>
+
+      <!-- Payment & Fulfillment Mode -->
+      <section>
+        <div class="invoice-section-title">
+          <span>💳 Payment &amp; Fulfillment</span>
+        </div>
+        <div class="invoice-form-grid">
+          <div class="field">
+            <label for="inv-status">Payment / Order Status</label>
+            <select id="inv-status" name="status">
+              <option value="paid">✓ Paid in Full</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="processing">Processing</option>
+              <option value="new" selected>New / Pending Payment</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="inv-payment-method">Payment Mode</label>
+            <select id="inv-payment-method" name="payment_method">
+              <option value="razorpay">Razorpay Online</option>
+              <option value="bank_transfer" selected>Bank Transfer (NEFT / RTGS / IMPS)</option>
+              <option value="upi">UPI / GPay / PhonePe</option>
+              <option value="cash">Cash / Pay on Delivery</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="inv-fulfillment">Fulfillment Type</label>
+            <select id="inv-fulfillment" name="fulfillment">
+              <option value="ship" selected>Deliver to Location</option>
+              <option value="pickup">Customer Arrange Pickup</option>
+              <option value="export">Export Shipment</option>
+              <option value="quote">Commercial Quotation</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Line Items Section -->
+      <section>
+        <div class="invoice-section-title">
+          <span>📦 Invoice Line Items</span>
+          <button type="button" class="btn-invoice-print" id="btn-inv-add-row" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
+            + Add Product Row
+          </button>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table class="invoice-items-table" id="inv-items-table">
+            <thead>
+              <tr>
+                <th style="width: 40%;">Item Description</th>
+                <th style="width: 18%;">Unit Price (₹)</th>
+                <th style="width: 16%;">Qty</th>
+                <th style="width: 20%; text-align: right;">Total (₹)</th>
+                <th style="width: 6%;"></th>
+              </tr>
+            </thead>
+            <tbody id="inv-items-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tax, Discount & Live Summary Calculation -->
+      <section>
+        <div class="invoice-form-grid" style="align-items: end;">
+          <div class="field">
+            <label for="inv-tax-rate">GST Rate (%)</label>
+            <select id="inv-tax-rate" name="tax_rate">
+              <option value="0" selected>0% (Exempt / Agricultural Coir)</option>
+              <option value="5">5% GST (2.5% CGST + 2.5% SGST)</option>
+              <option value="12">12% GST (6% CGST + 6% SGST)</option>
+              <option value="18">18% GST (9% CGST + 9% SGST)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="inv-discount">Discount (₹)</label>
+            <input type="number" id="inv-discount" name="discount" min="0" value="0" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="inv-shipping">Shipping / Handling (₹)</label>
+            <input type="number" id="inv-shipping" name="shipping" min="0" value="0" placeholder="0">
+          </div>
+        </div>
+
+        <div class="invoice-summary-box">
+          <div class="invoice-summary-row">
+            <span>Items Subtotal:</span>
+            <span id="inv-calc-subtotal" style="font-weight: 600;">₹0</span>
+          </div>
+          <div class="invoice-summary-row" id="inv-row-discount" style="display: none;">
+            <span>Discount:</span>
+            <span id="inv-calc-discount" style="color: var(--rose);">-₹0</span>
+          </div>
+          <div class="invoice-summary-row" id="inv-row-tax" style="display: none;">
+            <span>GST Tax:</span>
+            <span id="inv-calc-tax">₹0</span>
+          </div>
+          <div class="invoice-summary-row" id="inv-row-shipping" style="display: none;">
+            <span>Shipping &amp; Delivery:</span>
+            <span id="inv-calc-shipping">₹0</span>
+          </div>
+          <div class="invoice-summary-row total">
+            <span>Grand Total:</span>
+            <span id="inv-calc-grand-total" style="color: var(--gold); font-size: 1.25rem;">₹0</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Logistics & Notes -->
+      <section>
+        <div class="invoice-section-title">
+          <span>🚚 Delivery &amp; Terms</span>
+        </div>
+        <div class="invoice-form-grid">
+          <div class="field">
+            <label for="inv-delivery-partner">Delivery Partner / Courier</label>
+            <input type="text" id="inv-delivery-partner" list="courier-list" placeholder="e.g. Delhivery, VRL, DTDC">
+          </div>
+          <div class="field">
+            <label for="inv-tracking-id">Tracking / AWB Number</label>
+            <input type="text" id="inv-tracking-id" placeholder="e.g. DL123456789IN" style="font-family: monospace;">
+          </div>
+        </div>
+        <div class="field" style="margin-top: 0.65rem;">
+          <label for="inv-notes">Terms / Invoice Notes</label>
+          <textarea id="inv-notes" name="notes" rows="2" placeholder="e.g. 100% natural organic coir medium. Thank you for your business."></textarea>
+        </div>
+      </section>
+
+      <!-- Submit & Action Buttons -->
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
+        <button type="submit" class="btn-primary" id="btn-save-invoice" style="flex: 1.2; justify-content: center; padding: 0.75rem; font-weight: 700;">
+          💾 Save &amp; Print Tax Invoice
+        </button>
+        <button type="button" class="btn-logout" id="btn-cancel-invoice" style="flex: 0.6; justify-content: center; padding: 0.75rem;">
+          Cancel
+        </button>
+      </div>
+
+      <p class="form-error" id="invoice-form-error" role="alert" hidden style="color: var(--rose); font-size: 0.85rem; font-weight: 600; margin: 0;"></p>
     </form>
   </aside>
 
