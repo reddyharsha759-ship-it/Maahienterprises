@@ -10,7 +10,7 @@
       var AUTH_KEY = "maahi_owner_auth_token";
       var hasHashToken = window.location.hash && (window.location.hash.indexOf("access_token=") !== -1 || window.location.hash.indexOf("error=") !== -1);
       if (!sessionStorage.getItem(AUTH_KEY) && !localStorage.getItem(AUTH_KEY) && !hasHashToken) {
-        window.location.replace("login.html");
+        window.location.replace("../login.html?role=admin");
       }
     })();
   </script>

@@ -201,7 +201,7 @@
   // 1. Authorization check
   var hasHashToken = window.location.hash && (window.location.hash.indexOf("access_token=") !== -1 || window.location.hash.indexOf("error=") !== -1);
   if (!sessionStorage.getItem(AUTH_KEY) && !localStorage.getItem(AUTH_KEY) && !hasHashToken) {
-    window.location.replace("../index.html");
+    window.location.replace("../login.html?role=admin");
     return;
   }
 
@@ -1591,12 +1591,12 @@
       
       if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
         window.maahiSupabase.signOut().then(function () {
-          window.location.replace("login.html");
+          window.location.replace("../login.html?role=admin");
         }).catch(function () {
-          window.location.replace("login.html");
+          window.location.replace("../login.html?role=admin");
         });
       } else {
-        window.location.replace("login.html");
+        window.location.replace("../login.html?role=admin");
       }
     });
   }
@@ -1844,7 +1844,7 @@
         localStorage.removeItem(AUTH_KEY);
         sessionStorage.removeItem(PROFILE_KEY);
         localStorage.removeItem(PROFILE_KEY);
-        window.location.replace("../index.html");
+        window.location.replace("../login.html?role=admin");
       }
     });
   }
