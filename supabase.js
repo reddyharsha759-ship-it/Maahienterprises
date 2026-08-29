@@ -37,17 +37,15 @@
       return;
     }
     client
-      .from("products")
+      .from("orders")
       .select("id")
       .limit(1)
       .then(function (res) {
         if (res.error) {
           var status = res.error.status;
           if (status === 401 || (res.error.message && res.error.message.indexOf("API key") !== -1)) {
-            // Invalid API key
             isConnectionHealthy = false;
           } else if (status === 400 || status === 403 || status === 404 || res.error.code === "P0001" || (res.error.message && res.error.message.indexOf("relation") !== -1)) {
-            // Reached server, schema table not created yet or RLS policy needed
             isConnectionHealthy = true;
           } else {
             isConnectionHealthy = false;
@@ -104,9 +102,9 @@
         }
         try {
           var testClient = window.supabase.createClient(url, key);
-          // Try to select from products table
+          // Try to select from orders table
           testClient
-            .from("products")
+            .from("orders")
             .select("id")
             .limit(1)
             .then(function (res) {
