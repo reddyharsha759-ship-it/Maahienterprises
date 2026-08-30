@@ -3,7 +3,8 @@
   var menu = document.getElementById("nav-menu");
   if (!toggle || !menu) return;
 
-  toggle.addEventListener("click", function () {
+  toggle.addEventListener("click", function (e) {
+    e.stopPropagation();
     var open = menu.classList.toggle("is-open");
     toggle.setAttribute("aria-expanded", open ? "true" : "false");
   });
@@ -13,6 +14,13 @@
       menu.classList.remove("is-open");
       toggle.setAttribute("aria-expanded", "false");
     });
+  });
+
+  document.addEventListener("click", function (e) {
+    if (menu.classList.contains("is-open") && !menu.contains(e.target) && e.target !== toggle) {
+      menu.classList.remove("is-open");
+      toggle.setAttribute("aria-expanded", "false");
+    }
   });
 })();
 

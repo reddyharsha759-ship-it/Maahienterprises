@@ -2607,6 +2607,38 @@
     });
   }
 
+  // Mobile Sidebar Drawer Controls
+  var sidebarEl = document.querySelector(".sidebar");
+  var toggleBtn = document.getElementById("sidebar-toggle-btn");
+  var backdropEl = document.getElementById("sidebar-backdrop");
+
+  function openMobileSidebar() {
+    if (sidebarEl) sidebarEl.classList.add("is-open");
+    if (backdropEl) backdropEl.classList.add("is-visible");
+  }
+
+  function closeMobileSidebar() {
+    if (sidebarEl) sidebarEl.classList.remove("is-open");
+    if (backdropEl) backdropEl.classList.remove("is-visible");
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", openMobileSidebar);
+  }
+
+  if (backdropEl) {
+    backdropEl.addEventListener("click", closeMobileSidebar);
+  }
+
+  // Close sidebar on link click on mobile
+  document.querySelectorAll(".sidebar-nav a").forEach(function (link) {
+    link.addEventListener("click", function () {
+      if (window.innerWidth <= 992) {
+        closeMobileSidebar();
+      }
+    });
+  });
+
   // Initial load
   refreshCatalogData();
   initRouter();

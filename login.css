@@ -727,6 +727,10 @@ body {
   .login-card {
     padding: 2.25rem 1.75rem;
   }
+
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 @media (max-width: 480px) {

@@ -14,3 +14,8 @@ desktop.ini
 
 # Dependencies
 node_modules/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
