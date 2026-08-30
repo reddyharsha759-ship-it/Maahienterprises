@@ -16,6 +16,18 @@ CREATE TABLE IF NOT EXISTS public.orders (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
+-- Ensure all columns exist even if orders table was created previously
+ALTER TABLE public.orders 
+ADD COLUMN IF NOT EXISTS customer_email TEXT,
+ADD COLUMN IF NOT EXISTS customer_name TEXT,
+ADD COLUMN IF NOT EXISTS total_amount NUMERIC(10, 2),
+ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'INR',
+ADD COLUMN IF NOT EXISTS items JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS subtotal NUMERIC(10, 2),
+ADD COLUMN IF NOT EXISTS lines JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS customer JSONB DEFAULT '{}'::jsonb,
+ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'placed';
+
 -- Indexing for performance
 CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON public.orders(customer_email);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
@@ -40,6 +52,11 @@ ON public.order_notifications(order_id, email_type);
 -- 3. Row Level Security
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_notifications ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies first to prevent "policy already exists" error (SQLSTATE 42710)
+DROP POLICY IF EXISTS "Allow public insert to orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow public read own orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow service role all notifications" ON public.order_notifications;
 
 -- Allow public insert from client storefront if needed (or authenticated)
 CREATE POLICY "Allow public insert to orders" ON public.orders
