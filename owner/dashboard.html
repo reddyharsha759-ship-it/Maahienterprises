@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="dashboard.css?v=2.1">
   
   <!-- Vercel Speed Insights -->
   <script defer src="/_vercel/speed-insights/script.js"></script>
@@ -32,10 +32,13 @@
   <div class="dashboard-layout">
     
     <!-- Left Sidebar Navigation -->
-    <aside class="sidebar" aria-label="Main Navigation">
+    <aside class="sidebar" id="sidebar" aria-label="Main Navigation">
       <div class="sidebar-header">
-        <a class="sidebar-logo" href="../index.html">MAAHI<span> PRODUCTS</span></a>
-        <span class="sidebar-badge">Owner Console</span>
+        <div style="flex: 1;">
+          <a class="sidebar-logo" href="../index.html">MAAHI<span> PRODUCTS</span></a>
+          <span class="sidebar-badge">Owner Console</span>
+        </div>
+        <button type="button" class="sidebar-close-mobile-btn" id="sidebar-close-mobile-btn" aria-label="Close sidebar">×</button>
       </div>
 
       <nav class="sidebar-nav">
@@ -769,6 +772,6 @@ create policy "Allow public write access to orders" on public.orders for all usi
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../config.js"></script>
   <script src="../supabase.js"></script>
-  <script src="dashboard.js"></script>
+  <script src="dashboard.js?v=2.1"></script>
 </body>
 </html>

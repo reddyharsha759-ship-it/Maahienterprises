@@ -98,6 +98,26 @@ body {
 
 .sidebar-header {
   margin-bottom: 2.25rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.sidebar-close-mobile-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.sidebar-close-mobile-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-logo {
@@ -1416,6 +1436,10 @@ html, body {
 
   .sidebar.is-open {
     transform: translateX(0);
+  }
+
+  .sidebar-close-mobile-btn {
+    display: block;
   }
 
   /* Main Content Area */
