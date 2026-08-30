@@ -1303,37 +1303,50 @@ body {
 }
 
 /* ==========================================================================
-   Owner Dashboard Mobile & Tablet Responsive Enhancements
+   Owner Dashboard Mobile & Tablet Responsive Engine
    ========================================================================== */
 
-/* Mobile Dashboard Navigation Bar (Hidden on Desktop) */
+/* Universal Mobile Overflow Protection */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Mobile Dashboard Top Navigation Bar */
 .dashboard-mobile-header {
   display: none;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1.25rem;
+  padding: 0.75rem 1rem;
   background-color: var(--surface);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 40;
-  margin: -1.25rem -1rem 1.5rem -1rem;
+  z-index: 80;
+  width: calc(100% + 2rem);
+  margin: -1.25rem -1rem 1.25rem -1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .btn-sidebar-toggle {
-  background: transparent;
+  background: rgba(82, 183, 136, 0.08);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 0.45rem;
+  padding: 0.5rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
 }
 
-.btn-sidebar-toggle:hover {
-  background: rgba(82, 183, 136, 0.1);
+.btn-sidebar-toggle:hover,
+.btn-sidebar-toggle:active {
+  background: rgba(82, 183, 136, 0.2);
   color: var(--accent);
 }
 
@@ -1342,6 +1355,7 @@ body {
   font-size: 1.15rem;
   font-weight: 700;
   color: #ffffff;
+  letter-spacing: -0.01em;
 }
 
 .mobile-header-logo span {
@@ -1349,23 +1363,24 @@ body {
 }
 
 .mobile-header-badge {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   background-color: rgba(233, 196, 106, 0.15);
   color: var(--gold);
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 4px;
+  letter-spacing: 0.05em;
 }
 
 /* Sidebar Backdrop on Mobile */
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 90;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 9998;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -1376,136 +1391,199 @@ body {
   pointer-events: auto;
 }
 
-/* Tablet & Mobile Breakpoints (<= 992px) */
+/* Breakpoint: Tablets & Mobile Devices (<= 992px) */
 @media screen and (max-width: 992px) {
   .dashboard-mobile-header {
     display: flex;
   }
 
-  /* Slide-out Mobile Sidebar */
+  /* Slide-out Mobile Sidebar Navigation */
   .sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
     width: 280px;
-    z-index: 100;
+    max-width: 85vw;
+    z-index: 9999;
     transform: translateX(-100%);
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 12px 0 36px rgba(0, 0, 0, 0.65);
     transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    background-color: #0c120f;
+    padding: 1.5rem 1.25rem;
+    overflow-y: auto;
   }
 
   .sidebar.is-open {
     transform: translateX(0);
   }
 
-  /* Main Content Layout Adjustments */
+  /* Main Content Area */
   .main-content {
     margin-left: 0 !important;
-    padding: 1.25rem 1rem 2.5rem;
-    width: 100%;
-    min-width: 100%;
+    padding: 1.25rem 1rem 3rem !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100vw !important;
   }
 
+  /* Topbar Headers & Actions */
   .topbar {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
   }
 
-  .topbar h1 {
-    font-size: 1.65rem;
+  .topbar-left h1 {
+    font-size: 1.5rem;
   }
 
+  .topbar-subtitle {
+    font-size: 0.85rem;
+  }
+
+  /* Topbar Action Buttons formatted in clean 2-column mobile grid */
   .topbar-right {
-    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
   }
 
-  .topbar-right button {
-    flex: 1;
-    justify-content: center;
+  .topbar-right button,
+  .topbar-right .btn-primary {
+    font-size: 0.8rem !important;
+    padding: 0.6rem 0.5rem !important;
+    text-align: center !important;
+    justify-content: center !important;
+    min-height: 42px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
-  /* Metric KPI Cards Grid */
+  /* Metrics KPI Cards Grid */
   .metrics-grid {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.85rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
     margin-bottom: 1.5rem;
   }
 
   .metric-card {
-    padding: 1.15rem 1rem;
+    padding: 1rem 0.85rem;
   }
 
   .metric-card .value {
-    font-size: 1.6rem;
+    font-size: 1.45rem;
   }
 
-  /* Orders and Data Tables on Mobile */
-  .orders-table-wrap,
-  .database-table-wrap,
-  .inventory-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    border-radius: var(--radius-sm);
-    margin-inline: -0.5rem;
-    width: calc(100% + 1rem);
+  .metric-card .label {
+    font-size: 0.7rem;
   }
 
-  table {
-    min-width: 600px;
-  }
-
-  /* Toolbar Filters & Search Bars */
-  .orders-toolbar,
-  .inventory-toolbar {
+  /* Filter Controls & Search Bars */
+  .filter-controls {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.75rem;
+    width: 100%;
+    gap: 0.65rem;
   }
 
-  .orders-toolbar input,
-  .orders-toolbar select,
-  .inventory-toolbar input,
-  .inventory-toolbar select {
+  .search-box,
+  .select-box {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .search-box input[type="search"],
+  .select-box select {
     width: 100%;
     font-size: 16px !important;
+    min-height: 44px;
   }
 
-  /* Drawers (Invoice & Product Editor) on Mobile */
+  /* Responsive Scrollable Tables */
+  .table-card {
+    border-radius: var(--radius-sm);
+    margin-inline: -0.25rem;
+  }
+
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+  }
+
+  .orders-table,
+  .inventory-table,
+  table {
+    min-width: 640px !important;
+  }
+
+  .orders-table th,
+  .orders-table td {
+    padding: 0.75rem 0.85rem;
+    font-size: 0.85rem;
+  }
+
+  /* Full Screen Drawers for Invoices, Detail & Product Editors */
   .invoice-drawer,
-  .product-drawer {
+  .product-drawer,
+  .detail-drawer,
+  .drawer {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
     max-width: 100vw !important;
-    border-left: none;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-left: none !important;
+    border-radius: 0 !important;
+    z-index: 10000 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .drawer-body,
+  .invoice-drawer form {
+    padding: 1rem !important;
+    padding-bottom: max(2rem, env(safe-area-inset-bottom)) !important;
   }
 
   .invoice-form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 
   .invoice-items-table {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    min-width: 100%;
+    width: 100%;
   }
 }
 
 /* Small Phones (<= 480px) */
 @media screen and (max-width: 480px) {
-  .topbar h1 {
-    font-size: 1.45rem;
+  .topbar-left h1 {
+    font-size: 1.35rem;
   }
 
   .metrics-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+  }
+
+  .topbar-right {
+    grid-template-columns: 1fr !important;
   }
 
   .card-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.5rem;
   }
 
   .chart-legend {
