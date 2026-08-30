@@ -56,7 +56,6 @@ ALTER TABLE public.order_notifications ENABLE ROW LEVEL SECURITY;
 -- Drop existing policies first to prevent "policy already exists" error (SQLSTATE 42710)
 DROP POLICY IF EXISTS "Allow public insert to orders" ON public.orders;
 DROP POLICY IF EXISTS "Allow public read own orders" ON public.orders;
-DROP POLICY IF EXISTS "Allow service role all notifications" ON public.order_notifications;
 
 -- Allow public insert from client storefront if needed (or authenticated)
 CREATE POLICY "Allow public insert to orders" ON public.orders
