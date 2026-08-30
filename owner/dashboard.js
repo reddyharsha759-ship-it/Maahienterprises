@@ -2062,6 +2062,11 @@
     var navInventory = document.getElementById("nav-inventory");
     var navDatabase = document.getElementById("nav-database");
 
+    var mobNavOverview = document.getElementById("mob-nav-overview");
+    var mobNavOrders = document.getElementById("mob-nav-orders");
+    var mobNavInventory = document.getElementById("mob-nav-inventory");
+    var mobNavDatabase = document.getElementById("mob-nav-database");
+
     var tabOverview = document.getElementById("tab-overview");
     var tabOrders = document.getElementById("tab-orders");
     var tabInventory = document.getElementById("tab-inventory");
@@ -2080,28 +2085,37 @@
       if (navInventory) navInventory.classList.remove("active");
       if (navDatabase) navDatabase.classList.remove("active");
 
+      if (mobNavOverview) mobNavOverview.classList.remove("active");
+      if (mobNavOrders) mobNavOrders.classList.remove("active");
+      if (mobNavInventory) mobNavInventory.classList.remove("active");
+      if (mobNavDatabase) mobNavDatabase.classList.remove("active");
+
       if (hash === "#overview") {
         if (tabOverview) tabOverview.style.display = "block";
         if (navOverview) navOverview.classList.add("active");
+        if (mobNavOverview) mobNavOverview.classList.add("active");
         refreshOrdersData();
       } else if (hash === "#orders") {
         if (tabOrders) tabOrders.style.display = "block";
         if (navOrders) navOrders.classList.add("active");
+        if (mobNavOrders) mobNavOrders.classList.add("active");
         refreshOrdersData();
       } else if (hash === "#inventory") {
         if (tabInventory) tabInventory.style.display = "block";
         if (navInventory) navInventory.classList.add("active");
+        if (mobNavInventory) mobNavInventory.classList.add("active");
         refreshCatalogData();
       } else if (hash === "#database") {
         if (tabDatabase) tabDatabase.style.display = "block";
         if (navDatabase) navDatabase.classList.add("active");
+        if (mobNavDatabase) mobNavDatabase.classList.add("active");
         updateDatabaseUI();
       }
     }
 
     window.addEventListener("hashchange", handleRoute);
 
-    [navOverview, navOrders, navInventory, navDatabase].forEach(function (el) {
+    [navOverview, navOrders, navInventory, navDatabase, mobNavOverview, mobNavOrders, mobNavInventory, mobNavDatabase].forEach(function (el) {
       if (el) {
         el.addEventListener("click", function () {
           var targetHash = el.getAttribute("href");
