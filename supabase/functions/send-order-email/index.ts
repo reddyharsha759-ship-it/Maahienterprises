@@ -1,9 +1,19 @@
 // Supabase Edge Function: send-order-email
+// Standard Supabase Edge Runtime types (for Deno runtime & Supabase CLI)
+// @ts-ignore
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// @ts-ignore
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Ambient declarations for editor compatibility (VS Code / Antigravity IDE)
+// @ts-ignore
+declare module "npm:@supabase/supabase-js@2" {
+  export function createClient(supabaseUrl: string, supabaseKey: string, options?: any): any;
+}
+
+// @ts-ignore
 declare const Deno: {
-  serve: (handler: (req: Request) => Promise<Response> | Response) => void;
+  serve: (handler: (req: any) => Promise<any> | any) => void;
   env: {
     get: (key: string) => string | undefined;
   };

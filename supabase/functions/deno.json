@@ -2,5 +2,8 @@
   "compilerOptions": {
     "allowJs": true,
     "lib": ["deno.window", "deno.ns"]
+  },
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2"
   }
 }

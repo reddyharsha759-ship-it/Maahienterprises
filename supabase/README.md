@@ -7,7 +7,7 @@ This folder contains the Edge Function and SQL migration to send transactional o
 ## 📁 Files Created
 
 1. [supabase/functions/send-order-email/index.ts](file:///c:/Users/harsh/.gemini/antigravity/scratch/MAAHI%20PRODUCTS/supabase/functions/send-order-email/index.ts): Deno / TypeScript Edge Function with idempotency check, modern HTML email generator, and Resend delivery.
-2. [supabase/migrations/20260830_orders_and_notifications.sql](file:///c:/Users/harsh/.gemini/antigravity/scratch/MAAHI%20PRODUCTS/supabase/migrations/20260830_orders_and_notifications.sql): Database migration creating `orders` and `order_notifications` tables.
+2. [supabase/schema.sql](file:///c:/Users/harsh/.gemini/antigravity/scratch/MAAHI%20PRODUCTS/supabase/schema.sql): Database migration and secure RLS policies.
 3. [supabase/.env.example](file:///c:/Users/harsh/.gemini/antigravity/scratch/MAAHI%20PRODUCTS/supabase/.env.example): Environment variable template.
 
 ---
@@ -16,7 +16,7 @@ This folder contains the Edge Function and SQL migration to send transactional o
 
 ### Step 1: Run the Database Migration
 1. Go to your **[Supabase Dashboard](https://supabase.com/dashboard/project/cgcaqmhgoshbkmwswgvy)** &rarr; **SQL Editor**.
-2. Copy and run the contents of [supabase/migrations/20260830_orders_and_notifications.sql](file:///c:/Users/harsh/.gemini/antigravity/scratch/MAAHI%20PRODUCTS/supabase/migrations/20260830_orders_and_notifications.sql).
+2. Copy and run the contents of [supabase/schema.sql](file:///c:/Users/harsh/.gemini/antigravity/scratch/MAAHI%20PRODUCTS/supabase/schema.sql).
 
 ### Step 2: Set Secrets in Supabase
 Run the following in your project terminal (replace values with your real keys):
