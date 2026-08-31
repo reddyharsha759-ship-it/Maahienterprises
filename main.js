@@ -591,6 +591,31 @@
     closeProfile();
   }
 
+  // Mobile Nav Toggle Handler
+  var navToggleBtn = document.querySelector(".nav-toggle");
+  var navMenu = document.getElementById("nav-menu");
+  if (navToggleBtn && navMenu) {
+    navToggleBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var isOpen = navMenu.classList.toggle("is-open");
+      navToggleBtn.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    navMenu.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", function () {
+        navMenu.classList.remove("is-open");
+        navToggleBtn.setAttribute("aria-expanded", "false");
+      });
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!navMenu.contains(e.target) && !navToggleBtn.contains(e.target)) {
+        navMenu.classList.remove("is-open");
+        navToggleBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
   function getConsumer() {
     try {
       var raw = localStorage.getItem(CONSUMER_KEY);
