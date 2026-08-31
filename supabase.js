@@ -423,6 +423,26 @@
       return this.updateOrder(orderId, updates);
     },
 
+    // Delete order
+    deleteOrder: function (orderId) {
+      return new Promise(function (resolve, reject) {
+        if (!client) {
+          reject(new Error("Supabase client not initialized"));
+          return;
+        }
+
+        client
+          .from("orders")
+          .delete()
+          .eq("id", orderId)
+          .then(function (res) {
+            if (res.error) reject(res.error);
+            else resolve(true);
+          })
+          .catch(reject);
+      });
+    },
+
     // Supabase Auth Integration
     signInWithGoogle: function (redirectTo) {
       if (!client) return Promise.reject(new Error("Supabase client not initialized"));

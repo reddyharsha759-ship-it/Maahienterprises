@@ -1428,9 +1428,20 @@
     html += '    <button type="button" class="btn-primary" id="btn-print-drawer-invoice" style="flex: 1.2; justify-content: center; padding: 0.65rem 0.85rem; font-weight: 700;">🧾 Print Tax Invoice</button>';
     html += '    <button type="button" class="btn-logout" id="btn-edit-drawer-invoice" style="flex: 0.8; justify-content: center; padding: 0.65rem 0.85rem; font-weight: 600;">✏️ Edit Invoice</button>';
     html += '  </div>';
+    html += '  <div style="margin-top: 0.75rem;">';
+    html += '    <button type="button" id="btn-drawer-delete-order" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.45rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35); color: #dc2626; padding: 0.65rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background 0.2s;">🗑️ Delete Order / Inquiry Permanently</button>';
+    html += '  </div>';
     html += '</section>';
 
     drawerBody.innerHTML = html;
+
+    // Attach delete order handler
+    var deleteDrawerBtn = drawerBody.querySelector("#btn-drawer-delete-order");
+    if (deleteDrawerBtn) {
+      deleteDrawerBtn.addEventListener("click", function () {
+        deleteOrder(order.id);
+      });
+    }
 
     // Attach invoice print & edit handlers
     var printInvoiceBtn = drawerBody.querySelector("#btn-print-drawer-invoice");
@@ -1643,13 +1654,32 @@
       viewBtn.addEventListener("click", function () {
         openDetail(o);
       });
+
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "btn-delete-order";
+      delBtn.innerHTML = "🗑️";
+      delBtn.title = "Delete Order";
+      delBtn.style.background = "rgba(239, 68, 68, 0.1)";
+      delBtn.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+      delBtn.style.color = "#ef4444";
+      delBtn.style.borderRadius = "6px";
+      delBtn.style.padding = "0.35rem 0.55rem";
+      delBtn.style.cursor = "pointer";
+      delBtn.style.fontSize = "0.82rem";
+      delBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        deleteOrder(o.id);
+      });
       
       actionCell.appendChild(invBtn);
       actionCell.appendChild(viewBtn);
+      actionCell.appendChild(delBtn);
       tbody.appendChild(tr);
     });
 
     renderRecentOrders();
+    renderQuotesTable();
   }
 
   function renderRecentOrders() {
@@ -1722,10 +1752,294 @@
         openDetail(o);
       });
 
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "btn-delete-order";
+      delBtn.innerHTML = "🗑️";
+      delBtn.title = "Delete Order";
+      delBtn.style.background = "rgba(239, 68, 68, 0.1)";
+      delBtn.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+      delBtn.style.color = "#ef4444";
+      delBtn.style.borderRadius = "6px";
+      delBtn.style.padding = "0.35rem 0.55rem";
+      delBtn.style.cursor = "pointer";
+      delBtn.style.fontSize = "0.82rem";
+      delBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        deleteOrder(o.id);
+      });
+
       actionCell.appendChild(invBtn);
       actionCell.appendChild(viewBtn);
+      actionCell.appendChild(delBtn);
       overviewTbody.appendChild(tr);
     });
+  }
+
+  // --- PERMANENT ORDER DELETION ---
+  function deleteOrder(orderId) {
+    if (!orderId) return;
+    if (!confirm("Are you sure you want to permanently delete order #" + orderId + "?\n\nThis will remove the record from your dashboard and database.")) {
+      return;
+    }
+
+    var orders = loadOrders();
+    var filtered = orders.filter(function (o) {
+      return o && o.id !== orderId;
+    });
+    saveOrders(filtered);
+
+    if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
+      window.maahiSupabase.deleteOrder(orderId).then(function () {
+        console.log("Order deleted from Supabase:", orderId);
+      }).catch(function (err) {
+        console.warn("Failed to delete order from Supabase:", err);
+      });
+    }
+
+    closeDetail();
+    renderStats(filtered);
+    renderTable();
+    renderQuotesTable();
+  }
+
+  // --- QUOTE INQUIRIES CONTROLLER ---
+  function getQuotes() {
+    var allOrders = loadOrders();
+    return allOrders.filter(function (o) {
+      if (!o) return false;
+      var isQ = (o.id && o.id.startsWith("QTE-")) ||
+                (o.customer && (o.customer.is_quote || o.customer.fulfillment === "quote"));
+      return isQ;
+    });
+  }
+
+  function getFilteredQuotes() {
+    var quotes = getQuotes();
+    var qInp = document.getElementById("quotes-search");
+    var q = (qInp && qInp.value.trim().toLowerCase()) || "";
+    if (!q) return quotes;
+    return quotes.filter(function (o) {
+      var prodTitles = (o.lines || []).map(function(l) { return l.title || l.name || l.sku || ""; }).join(" ");
+      var blob = (o.id || "") + " " +
+                 (o.customer && o.customer.name) + " " +
+                 (o.customer && o.customer.phone) + " " +
+                 (o.customer && o.customer.email) + " " +
+                 (o.customer && o.customer.pincode) + " " +
+                 (o.customer && o.customer.notes) + " " +
+                 prodTitles;
+      return blob.toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  function renderQuotesStats(quotes) {
+    var quotesStatsEl = document.getElementById("quotes-stats");
+    var quotesBadge = document.getElementById("quotes-badge");
+    
+    if (quotesBadge) {
+      if (quotes.length > 0) {
+        quotesBadge.style.display = "inline-block";
+        quotesBadge.textContent = quotes.length;
+      } else {
+        quotesBadge.style.display = "none";
+      }
+    }
+
+    if (!quotesStatsEl) return;
+
+    var totalQuotes = quotes.length;
+    var totalVal = quotes.reduce(function (sum, o) {
+      return sum + (Number(o.subtotal) || 0);
+    }, 0);
+    var totalSavings = quotes.reduce(function (sum, o) {
+      return sum + (Number(o.total_savings) || 0);
+    }, 0);
+
+    var html = "";
+    html += '<article class="metric-card">';
+    html += '  <div class="card-info">';
+    html += '    <p class="label">Total Inquiries</p>';
+    html += '    <p class="value">' + totalQuotes + '</p>';
+    html += '    <span class="trend-badge up">Wholesale Leads</span>';
+    html += '  </div>';
+    html += '  <div class="card-icon-bg" aria-hidden="true">📋</div>';
+    html += '</article>';
+
+    html += '<article class="metric-card">';
+    html += '  <div class="card-info">';
+    html += '    <p class="label">Estimated Value</p>';
+    html += '    <p class="value">' + formatMoney(totalVal) + '</p>';
+    html += '    <span class="trend-badge">Bulk Demand</span>';
+    html += '  </div>';
+    html += '  <div class="card-icon-bg" aria-hidden="true">₹</div>';
+    html += '</article>';
+
+    html += '<article class="metric-card">';
+    html += '  <div class="card-info">';
+    html += '    <p class="label">Potential Savings</p>';
+    html += '    <p class="value">' + formatMoney(totalSavings) + '</p>';
+    html += '    <span class="trend-badge">Tier Discounts</span>';
+    html += '  </div>';
+    html += '  <div class="card-icon-bg" aria-hidden="true">🏷️</div>';
+    html += '</article>';
+
+    quotesStatsEl.innerHTML = html;
+  }
+
+  function renderQuotesTable() {
+    var quotes = getFilteredQuotes();
+    var allQuotes = getQuotes();
+    renderQuotesStats(allQuotes);
+
+    var qTbody = document.getElementById("quotes-tbody");
+    var qEmpty = document.getElementById("quotes-empty");
+    var qTable = document.getElementById("quotes-table");
+
+    if (!qTbody) return;
+    qTbody.innerHTML = "";
+
+    if (!quotes.length) {
+      if (qEmpty) qEmpty.removeAttribute("hidden");
+      if (qTable) qTable.hidden = true;
+      return;
+    }
+
+    if (qEmpty) qEmpty.setAttribute("hidden", "true");
+    if (qTable) qTable.hidden = false;
+
+    quotes.forEach(function (o) {
+      var tr = document.createElement("tr");
+      var c = o.customer || {};
+      var dt = formatDate(o.createdAt);
+      var firstLine = (o.lines && o.lines[0]) || {};
+      var prodTitle = firstLine.title || firstLine.name || "Bulk Products";
+      var prodSku = firstLine.sku || "";
+      var qtyVal = firstLine.qty || firstLine.quantity || 1;
+      var pinVal = c.pincode || "—";
+      var rawPhone = (c.phone || "").replace(/\D/g, "");
+      var intlPhone = rawPhone.length === 10 ? ("91" + rawPhone) : rawPhone;
+
+      var prodInfoHtml = '<strong>' + escapeHtml(prodTitle) + '</strong>' + 
+                         (prodSku ? '<span style="display:block; font-size:0.72rem; color:var(--accent); font-family:monospace;">SKU: ' + escapeHtml(prodSku) + '</span>' : '');
+
+      var contactHtml = '<strong>' + escapeHtml(c.name || "Customer") + '</strong>' +
+                        (c.phone ? '<span style="display:block; font-size:0.78rem; font-weight:600;"><a href="tel:' + escapeHtml(c.phone) + '" style="color:var(--gold); text-decoration:underline;">' + escapeHtml(c.phone) + '</a></span>' : '') +
+                        (c.email ? '<span style="display:block; font-size:0.72rem; color:var(--text-muted);">' + escapeHtml(c.email) + '</span>' : '');
+
+      var savingsBadge = o.total_savings > 0 ? '<span style="display:block; font-size:0.7rem; color:#166534; font-weight:700;">Save ' + formatMoney(o.total_savings) + '</span>' : '';
+
+      tr.innerHTML = 
+        '<td><span class="mono" style="font-weight:700; color:var(--accent);">' + escapeHtml(o.id) + '</span></td>' +
+        '<td>' + escapeHtml(dt) + '</td>' +
+        '<td>' + prodInfoHtml + '</td>' +
+        '<td><strong style="font-size:0.92rem;">' + qtyVal + '</strong> units</td>' +
+        '<td><span style="background:rgba(45,106,79,0.12); padding:2px 7px; border-radius:4px; font-weight:700; font-family:monospace; color:var(--accent);">' + escapeHtml(pinVal) + '</span></td>' +
+        '<td class="customer-cell">' + contactHtml + '</td>' +
+        '<td><span class="amount-text">' + formatMoney(o.subtotal) + '</span>' + savingsBadge + '</td>' +
+        '<td style="text-align: right;"></td>';
+
+      var actionCell = tr.querySelector("td:last-child");
+      actionCell.style.display = "flex";
+      actionCell.style.gap = "0.35rem";
+      actionCell.style.justifyContent = "flex-end";
+      actionCell.style.flexWrap = "nowrap";
+
+      if (rawPhone) {
+        var callLink = document.createElement("a");
+        callLink.href = "tel:" + c.phone;
+        callLink.className = "btn-small";
+        callLink.title = "Call Customer";
+        callLink.style.background = "#1b4332";
+        callLink.style.color = "#fff";
+        callLink.style.padding = "0.35rem 0.6rem";
+        callLink.style.textDecoration = "none";
+        callLink.innerHTML = "📞";
+        actionCell.appendChild(callLink);
+
+        var waLink = document.createElement("a");
+        waLink.href = "https://wa.me/" + intlPhone + "?text=" + encodeURIComponent("Hi, regarding your bulk quote request for " + prodTitle + " (Ref: " + o.id + ")...");
+        waLink.target = "_blank";
+        waLink.rel = "noopener";
+        waLink.className = "btn-small";
+        waLink.title = "Message on WhatsApp";
+        waLink.style.background = "#128c7e";
+        waLink.style.color = "#fff";
+        waLink.style.padding = "0.35rem 0.6rem";
+        waLink.style.textDecoration = "none";
+        waLink.innerHTML = "💬";
+        actionCell.appendChild(waLink);
+      }
+
+      var viewBtn = document.createElement("button");
+      viewBtn.type = "button";
+      viewBtn.className = "btn-small";
+      viewBtn.textContent = "View";
+      viewBtn.addEventListener("click", function () {
+        openDetail(o);
+      });
+      actionCell.appendChild(viewBtn);
+
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "btn-delete-order";
+      delBtn.innerHTML = "🗑️";
+      delBtn.title = "Delete Quote Request";
+      delBtn.style.background = "rgba(239, 68, 68, 0.1)";
+      delBtn.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+      delBtn.style.color = "#ef4444";
+      delBtn.style.borderRadius = "6px";
+      delBtn.style.padding = "0.35rem 0.55rem";
+      delBtn.style.cursor = "pointer";
+      delBtn.style.fontSize = "0.82rem";
+      delBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        deleteOrder(o.id);
+      });
+      actionCell.appendChild(delBtn);
+
+      qTbody.appendChild(tr);
+    });
+  }
+
+  function exportQuotesExcel() {
+    var quotes = getQuotes();
+    if (!quotes.length) {
+      alert("No quote inquiries available to export.");
+      return;
+    }
+    var headers = ["Quote Ref", "Date", "Product", "SKU", "Quantity", "PIN Code", "Customer Name", "Phone", "Email", "Amount (INR)", "Notes"];
+    var rows = quotes.map(function (o) {
+      var c = o.customer || {};
+      var l = (o.lines && o.lines[0]) || {};
+      return [
+        o.id,
+        o.createdAt ? o.createdAt.slice(0, 19).replace("T", " ") : "",
+        l.title || l.name || "",
+        l.sku || "",
+        l.qty || l.quantity || 1,
+        c.pincode || "",
+        c.name || "",
+        c.phone || "",
+        c.email || "",
+        o.subtotal || 0,
+        c.notes || ""
+      ];
+    });
+    var csvContent = [headers.join(",")].concat(rows.map(function (r) {
+      return r.map(function (val) {
+        return '"' + String(val).replace(/"/g, '""') + '"';
+      }).join(",");
+    })).join("\r\n");
+
+    var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "maahi_quote_inquiries_" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // --- INVENTORY MANAGEMENT ---
@@ -2103,16 +2417,19 @@
   function initRouter() {
     var navOverview = document.getElementById("nav-overview");
     var navOrders = document.getElementById("nav-orders");
+    var navQuotes = document.getElementById("nav-quotes");
     var navInventory = document.getElementById("nav-inventory");
     var navDatabase = document.getElementById("nav-database");
 
     var mobNavOverview = document.getElementById("mob-nav-overview");
     var mobNavOrders = document.getElementById("mob-nav-orders");
+    var mobNavQuotes = document.getElementById("mob-nav-quotes");
     var mobNavInventory = document.getElementById("mob-nav-inventory");
     var mobNavDatabase = document.getElementById("mob-nav-database");
 
     var tabOverview = document.getElementById("tab-overview");
     var tabOrders = document.getElementById("tab-orders");
+    var tabQuotes = document.getElementById("tab-quotes");
     var tabInventory = document.getElementById("tab-inventory");
     var tabDatabase = document.getElementById("tab-database");
 
@@ -2121,16 +2438,19 @@
 
       if (tabOverview) tabOverview.style.display = "none";
       if (tabOrders) tabOrders.style.display = "none";
+      if (tabQuotes) tabQuotes.style.display = "none";
       if (tabInventory) tabInventory.style.display = "none";
       if (tabDatabase) tabDatabase.style.display = "none";
 
       if (navOverview) navOverview.classList.remove("active");
       if (navOrders) navOrders.classList.remove("active");
+      if (navQuotes) navQuotes.classList.remove("active");
       if (navInventory) navInventory.classList.remove("active");
       if (navDatabase) navDatabase.classList.remove("active");
 
       if (mobNavOverview) mobNavOverview.classList.remove("active");
       if (mobNavOrders) mobNavOrders.classList.remove("active");
+      if (mobNavQuotes) mobNavQuotes.classList.remove("active");
       if (mobNavInventory) mobNavInventory.classList.remove("active");
       if (mobNavDatabase) mobNavDatabase.classList.remove("active");
 
@@ -2144,6 +2464,12 @@
         if (navOrders) navOrders.classList.add("active");
         if (mobNavOrders) mobNavOrders.classList.add("active");
         refreshOrdersData();
+      } else if (hash === "#quotes") {
+        if (tabQuotes) tabQuotes.style.display = "block";
+        if (navQuotes) navQuotes.classList.add("active");
+        if (mobNavQuotes) mobNavQuotes.classList.add("active");
+        refreshOrdersData();
+        renderQuotesTable();
       } else if (hash === "#inventory") {
         if (tabInventory) tabInventory.style.display = "block";
         if (navInventory) navInventory.classList.add("active");
@@ -2159,7 +2485,7 @@
 
     window.addEventListener("hashchange", handleRoute);
 
-    [navOverview, navOrders, navInventory, navDatabase, mobNavOverview, mobNavOrders, mobNavInventory, mobNavDatabase].forEach(function (el) {
+    [navOverview, navOrders, navQuotes, navInventory, navDatabase, mobNavOverview, mobNavOrders, mobNavQuotes, mobNavInventory, mobNavDatabase].forEach(function (el) {
       if (el) {
         el.addEventListener("click", function () {
           var targetHash = el.getAttribute("href");
@@ -2353,6 +2679,37 @@
   var btnExportInvPDF = document.getElementById("btn-export-inv-pdf");
   if (btnExportInvPDF) {
     btnExportInvPDF.addEventListener("click", exportInventoryPDF);
+  }
+
+  // Quote Inquiries Listeners
+  var quotesSearch = document.getElementById("quotes-search");
+  if (quotesSearch) {
+    quotesSearch.addEventListener("input", renderQuotesTable);
+  }
+
+  var btnRefreshQuotes = document.getElementById("btn-refresh-quotes");
+  if (btnRefreshQuotes) {
+    btnRefreshQuotes.addEventListener("click", function () {
+      btnRefreshQuotes.disabled = true;
+      btnRefreshQuotes.textContent = "Syncing...";
+      refreshOrdersData();
+      setTimeout(function () {
+        btnRefreshQuotes.disabled = false;
+        btnRefreshQuotes.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Refresh &amp; Sync';
+      }, 700);
+    });
+  }
+
+  var btnExportQuotesExcel = document.getElementById("btn-export-quotes-excel");
+  if (btnExportQuotesExcel) {
+    btnExportQuotesExcel.addEventListener("click", exportQuotesExcel);
+  }
+
+  var btnCreateInvoiceQuotes = document.getElementById("btn-create-invoice-quotes");
+  if (btnCreateInvoiceQuotes) {
+    btnCreateInvoiceQuotes.addEventListener("click", function () {
+      openInvoiceDrawer();
+    });
   }
 
   if (btnLogout) {
