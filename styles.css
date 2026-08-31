@@ -1257,32 +1257,212 @@ tbody td:first-child {
   border-radius: 4px;
 }
 
+.product-bulk-widget {
+  margin: 0.75rem 0 1rem;
+  background: #fbfdfc;
+  border: 1px solid rgba(45, 106, 79, 0.18);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bulk-tier-table-wrap {
+  overflow-x: auto;
+}
+
+.bulk-tier-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.bulk-tier-table th {
+  background: rgba(45, 106, 79, 0.08);
+  color: var(--accent);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(45, 106, 79, 0.15);
+}
+
+.bulk-tier-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  color: var(--text);
+  transition: background-color 0.15s ease;
+}
+
+.bulk-tier-table tbody tr {
+  cursor: pointer;
+}
+
+.bulk-tier-table tbody tr:hover {
+  background: rgba(45, 106, 79, 0.04);
+}
+
+.bulk-tier-table tbody tr.is-active {
+  background: #e8f5e9 !important;
+  color: #1b4332;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.bulk-tier-table tbody tr.is-active .tier-table-price {
+  color: #1b4332;
+  font-weight: 800;
+}
+
+.tier-table-price {
+  font-weight: 600;
+}
+
+.tier-tag-pill {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+}
+
+.tier-tag-base {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.tier-tag-bulk {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+/* Card Live Calculation Card */
+.card-live-calc {
+  padding: 0.5rem 0.65rem;
+  background: #f4faf6;
+  border-top: 1px dashed rgba(45, 106, 79, 0.18);
+  font-size: 0.8rem;
+}
+
+.card-calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-calc-label {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.card-calc-total {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.card-calc-savings {
+  display: inline-block;
+  margin-top: 0.3rem;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #a5d6a7;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.card-calc-upsell {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #854d0e;
+  background: #fef9c3;
+  border: 1px solid #fde047;
+  padding: 0.25rem 0.45rem;
+  border-radius: 4px;
+  line-height: 1.3;
+}
+
 .product-buy-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  margin-top: 0.5rem;
+}
+
+.product-stepper-control {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(45, 106, 79, 0.3);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.btn-stepper-step {
+  width: 2.25rem;
+  height: 2.35rem;
+  border: none;
+  background: #f1f5f3;
+  color: var(--text);
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.btn-stepper-step:hover {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.btn-stepper-step:active {
+  background: #1b4332;
+  color: #ffffff;
 }
 
 .qty-stepper {
-  width: 4.5rem;
-  padding: 0.5rem 0.4rem;
-  border: 1px solid rgba(45, 106, 79, 0.25);
-  border-radius: 8px;
+  width: 3.25rem;
+  height: 2.35rem;
+  padding: 0 0.25rem;
+  border: none;
+  border-left: 1px solid rgba(45, 106, 79, 0.15);
+  border-right: 1px solid rgba(45, 106, 79, 0.15);
+  border-radius: 0;
   font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
   text-align: center;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.qty-stepper::-webkit-outer-spin-button,
+.qty-stepper::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .btn-add-cart {
   flex: 1;
-  min-width: 140px;
-  padding: 0.55rem 1rem;
+  min-width: 120px;
+  height: 2.35rem;
+  padding: 0 1rem;
   border: 1px solid #f0c14b;
   border-radius: 8px;
   background: linear-gradient(180deg, #f7dfa5 0%, #f0c14b 100%);
   font-family: inherit;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: #111;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -1401,6 +1581,102 @@ body.cart-open {
   font-weight: 700;
   font-size: 0.92rem;
   color: var(--text);
+}
+
+.cart-line-pricing {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.price-discounted {
+  font-weight: 700;
+  color: #1b4332;
+  font-size: 0.95rem;
+}
+
+.price-original {
+  color: #8a9e94;
+  font-size: 0.85rem;
+  text-decoration: line-through;
+}
+
+.price-regular {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.badge-bulk-discount {
+  display: inline-block;
+  background: #2d6a4f;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge-bulk-discount-sm {
+  display: inline-block;
+  background: #2d6a4f;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  margin-left: 0.35rem;
+}
+
+.tier-upsell-hint {
+  margin: 0.3rem 0 0.45rem;
+  padding: 0.35rem 0.5rem;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #8d6e00;
+  line-height: 1.35;
+}
+
+.cart-line-saved {
+  color: #067d17;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.drawer-savings-badge {
+  display: inline-block;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #a5d6a7;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  margin-left: 0.5rem;
+}
+
+.checkout-savings-pill {
+  display: inline-block;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #a5d6a7;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  margin-left: 0.5rem;
+}
+
+.checkout-del {
+  color: #8a9e94;
+  font-size: 0.85rem;
+  margin-right: 0.35rem;
 }
 
 .cart-line-meta {

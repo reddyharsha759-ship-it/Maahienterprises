@@ -143,7 +143,76 @@ CREATE POLICY "Allow authenticated read notifications" ON public.order_notificat
 
 
 -- ==============================================================================
--- 4. Fix SECURITY DEFINER Executable Warnings (rls_auto_enable)
+-- 4. Product Pricing Tiers (Bulk & Wholesale Pricing)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.product_pricing_tiers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id TEXT NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+    min_qty INTEGER NOT NULL CHECK (min_qty >= 1),
+    max_qty INTEGER CHECK (max_qty IS NULL OR max_qty >= min_qty),
+    discount_percent NUMERIC(5, 2) DEFAULT 0.00 CHECK (discount_percent >= 0 AND discount_percent <= 100),
+    fixed_unit_price NUMERIC(10, 2) DEFAULT NULL CHECK (fixed_unit_price IS NULL OR fixed_unit_price >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    CONSTRAINT uq_product_tier UNIQUE (product_id, min_qty)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pricing_tiers_product_qty 
+ON public.product_pricing_tiers(product_id, min_qty, max_qty);
+
+ALTER TABLE public.product_pricing_tiers ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read pricing tiers" ON public.product_pricing_tiers;
+DROP POLICY IF EXISTS "Allow authenticated insert pricing tiers" ON public.product_pricing_tiers;
+DROP POLICY IF EXISTS "Allow authenticated update pricing tiers" ON public.product_pricing_tiers;
+DROP POLICY IF EXISTS "Allow authenticated delete pricing tiers" ON public.product_pricing_tiers;
+DROP POLICY IF EXISTS "Allow public write pricing tiers" ON public.product_pricing_tiers;
+
+-- Public read access for storefront calculations
+CREATE POLICY "Allow public read pricing tiers" ON public.product_pricing_tiers
+    FOR SELECT USING (true);
+
+-- Authenticated and public upsert permissions with validation
+CREATE POLICY "Allow public insert pricing tiers" ON public.product_pricing_tiers
+    FOR INSERT WITH CHECK (product_id IS NOT NULL AND min_qty >= 1);
+
+CREATE POLICY "Allow public update pricing tiers" ON public.product_pricing_tiers
+    FOR UPDATE USING (product_id IS NOT NULL) WITH CHECK (min_qty >= 1);
+
+CREATE POLICY "Allow public delete pricing tiers" ON public.product_pricing_tiers
+    FOR DELETE USING (product_id IS NOT NULL);
+
+-- Default wholesale pricing tiers:
+-- 1-9 units: 0% off (Retail)
+-- 10-49 units: 10% off (Bulk)
+-- 50-99 units: 15% off (Semi-Wholesale)
+-- 100+ units: 20% off (Wholesale)
+INSERT INTO public.product_pricing_tiers (product_id, min_qty, max_qty, discount_percent)
+VALUES
+    ('5kg', 1, 9, 0.00),
+    ('5kg', 10, 49, 10.00),
+    ('5kg', 50, 99, 15.00),
+    ('5kg', 100, NULL, 20.00),
+
+    ('650g', 1, 9, 0.00),
+    ('650g', 10, 49, 10.00),
+    ('650g', 50, 99, 15.00),
+    ('650g', 100, NULL, 20.00),
+
+    ('growbags', 1, 9, 0.00),
+    ('growbags', 10, 49, 10.00),
+    ('growbags', 50, 99, 15.00),
+    ('growbags', 100, NULL, 20.00),
+
+    ('husk', 1, 9, 0.00),
+    ('husk', 10, 49, 10.00),
+    ('husk', 50, 99, 15.00),
+    ('husk', 100, NULL, 20.00)
+ON CONFLICT (product_id, min_qty) DO UPDATE 
+SET max_qty = EXCLUDED.max_qty, discount_percent = EXCLUDED.discount_percent;
+
+
+-- ==============================================================================
+-- 5. Fix SECURITY DEFINER Executable Warnings (rls_auto_enable)
 -- ==============================================================================
 -- Revoke public execution of SECURITY DEFINER functions from PostgREST API
 DO $$

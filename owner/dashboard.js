@@ -763,10 +763,11 @@
       var itemPrice = Number(l.unitPrice || l.price) || 0;
       var itemQty = Number(l.qty || l.quantity) || 1;
       var itemTotal = l.lineTotal != null ? Number(l.lineTotal) : (itemPrice * itemQty);
+      var bulkTag = l.discountPercent > 0 ? ' <span style="font-size:10px; font-weight:700; color:#166534; background:#dcfce7; padding:1px 5px; border-radius:3px; border:1px solid #86efac;">' + l.discountPercent + '% BULK OFF</span>' : '';
 
       html += '      <tr>';
       html += '        <td>' + (idx + 1) + '</td>';
-      html += '        <td><strong>' + escapeHtml(l.title || l.name || l.id) + '</strong></td>';
+      html += '        <td><strong>' + escapeHtml(l.title || l.name || l.id) + '</strong>' + bulkTag + '</td>';
       html += '        <td style="text-align:right;">₹' + itemPrice.toLocaleString("en-IN") + '</td>';
       html += '        <td style="text-align:center;">' + itemQty + '</td>';
       html += '        <td style="text-align:right;">₹' + itemTotal.toLocaleString("en-IN") + '</td>';
@@ -1366,11 +1367,17 @@
     html += '  <h3 class="detail-section-title">Line items</h3>';
     html += '  <ul class="drawer-lines">';
     lines.forEach(function (l) {
-      var itemTotal = l.lineTotal != null ? l.lineTotal : (l.unitPrice || 0) * (l.qty || 0);
+      var itemPrice = l.unitPrice != null ? l.unitPrice : (l.price != null ? l.price : 0);
+      var itemQty = l.qty != null ? l.qty : (l.quantity != null ? l.quantity : 1);
+      var itemTotal = l.lineTotal != null ? l.lineTotal : itemPrice * itemQty;
+      var bulkBadge = l.discountPercent > 0 
+        ? ' <span style="display:inline-block; background:rgba(45,106,79,0.15); color:var(--accent); border:1px solid rgba(45,106,79,0.3); border-radius:3px; font-size:0.7rem; font-weight:700; padding:1px 4px; margin-left:4px;">' + l.discountPercent + '% BULK OFF</span>' 
+        : '';
+
       html += '    <li>';
       html += '      <div>';
-      html += '        <span class="line-title">' + escapeHtml(l.title || l.id) + '</span>';
-      html += '        <span class="line-qty">× ' + l.qty + '</span>';
+      html += '        <span class="line-title">' + escapeHtml(l.title || l.name || l.id) + bulkBadge + '</span>';
+      html += '        <span class="line-qty">× ' + itemQty + (l.discountPercent > 0 ? ' @ ₹' + itemPrice : '') + '</span>';
       html += '      </div>';
       html += '      <span class="line-price">' + formatMoney(itemTotal) + '</span>';
       html += '    </li>';
@@ -1380,6 +1387,12 @@
     html += '    <span>Subtotal</span>';
     html += '    <span class="drawer-subtotal-val">' + formatMoney(order.subtotal) + '</span>';
     html += '  </div>';
+    if (order.total_savings > 0) {
+      html += '  <div class="drawer-subtotal" style="color: #067d17; font-size: 0.85rem; padding-top: 0.25rem; border-top: none;">';
+      html += '    <span>Wholesale Savings</span>';
+      html += '    <span>- ' + formatMoney(order.total_savings) + '</span>';
+      html += '  </div>';
+    }
     html += '  <div style="margin-top: 1.25rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">';
     html += '    <button type="button" class="btn-primary" id="btn-print-drawer-invoice" style="flex: 1.2; justify-content: center; padding: 0.65rem 0.85rem; font-weight: 700;">🧾 Print Tax Invoice</button>';
     html += '    <button type="button" class="btn-logout" id="btn-edit-drawer-invoice" style="flex: 0.8; justify-content: center; padding: 0.65rem 0.85rem; font-weight: 600;">✏️ Edit Invoice</button>';

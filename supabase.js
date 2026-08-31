@@ -257,6 +257,62 @@
       });
     },
 
+    // Fetch pricing tiers for wholesale/bulk pricing
+    fetchPricingTiers: function () {
+      return new Promise(function (resolve) {
+        if (!client) {
+          resolve(null);
+          return;
+        }
+
+        client
+          .from("product_pricing_tiers")
+          .select("*")
+          .order("min_qty", { ascending: true })
+          .then(function (res) {
+            if (res.error) {
+              console.warn("Supabase fetchPricingTiers error:", res.error);
+              resolve(null);
+            } else {
+              var tiersMap = {};
+              (res.data || []).forEach(function (t) {
+                if (!tiersMap[t.product_id]) tiersMap[t.product_id] = [];
+                tiersMap[t.product_id].push({
+                  min: t.min_qty,
+                  max: t.max_qty,
+                  discount: parseFloat(t.discount_percent || 0),
+                  fixedPrice: t.fixed_unit_price != null ? parseFloat(t.fixed_unit_price) : null
+                });
+              });
+              resolve(tiersMap);
+            }
+          })
+          .catch(function (err) {
+            console.warn("Supabase fetchPricingTiers network error:", err);
+            resolve(null);
+          });
+      });
+    },
+
+    // Save pricing tiers
+    savePricingTiers: function (tiersList) {
+      return new Promise(function (resolve, reject) {
+        if (!client) {
+          reject(new Error("Supabase client not initialized"));
+          return;
+        }
+
+        client
+          .from("product_pricing_tiers")
+          .upsert(tiersList)
+          .then(function (res) {
+            if (res.error) reject(res.error);
+            else resolve(true);
+          })
+          .catch(reject);
+      });
+    },
+
     // Fetch all orders
     fetchOrders: function () {
       return new Promise(function (resolve) {

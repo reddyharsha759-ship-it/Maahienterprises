@@ -82,6 +82,124 @@
     }
   };
 
+  var DEFAULT_PRICING_TIERS = {
+    "5kg": [
+      { min: 1, max: 9, discount: 0 },
+      { min: 10, max: 49, discount: 10 },
+      { min: 50, max: 99, discount: 15 },
+      { min: 100, max: null, discount: 20 }
+    ],
+    "650g": [
+      { min: 1, max: 9, discount: 0 },
+      { min: 10, max: 49, discount: 10 },
+      { min: 50, max: 99, discount: 15 },
+      { min: 100, max: null, discount: 20 }
+    ],
+    "growbags": [
+      { min: 1, max: 9, discount: 0 },
+      { min: 10, max: 49, discount: 10 },
+      { min: 50, max: 99, discount: 15 },
+      { min: 100, max: null, discount: 20 }
+    ],
+    "husk": [
+      { min: 1, max: 9, discount: 0 },
+      { min: 10, max: 49, discount: 10 },
+      { min: 50, max: 99, discount: 15 },
+      { min: 100, max: null, discount: 20 }
+    ]
+  };
+
+  var PRICING_TIERS = (function () {
+    try {
+      var raw = localStorage.getItem("maahi_pricing_tiers_v1");
+      return raw ? JSON.parse(raw) : DEFAULT_PRICING_TIERS;
+    } catch (e) {
+      return DEFAULT_PRICING_TIERS;
+    }
+  })();
+
+  function getTierPricing(productId, quantity, basePrice) {
+    var qty = Math.max(1, parseInt(quantity, 10) || 1);
+    var p = CATALOG[productId];
+    var base = basePrice != null ? basePrice : (p ? p.price : 0);
+    var tiers = (PRICING_TIERS && PRICING_TIERS[productId]) || DEFAULT_PRICING_TIERS[productId] || [];
+
+    var currentTier = null;
+    var nextTier = null;
+
+    for (var i = 0; i < tiers.length; i++) {
+      var t = tiers[i];
+      var max = t.max == null ? Infinity : t.max;
+      if (qty >= t.min && qty <= max) {
+        currentTier = t;
+      }
+      if (t.min > qty && !nextTier) {
+        nextTier = t;
+      }
+    }
+
+    var discountPercent = (currentTier && currentTier.discount) || 0;
+    var unitPrice = base;
+    if (currentTier && currentTier.fixedPrice != null) {
+      unitPrice = currentTier.fixedPrice;
+      discountPercent = base > 0 ? Math.round(((base - unitPrice) / base) * 100) : 0;
+    } else if (discountPercent > 0) {
+      unitPrice = Math.round(base * (1 - discountPercent / 100));
+    }
+
+    var regularLineTotal = base * qty;
+    var lineTotal = unitPrice * qty;
+    var savings = regularLineTotal - lineTotal;
+
+    var nextTierHint = null;
+    if (nextTier) {
+      var diff = nextTier.min - qty;
+      nextTierHint = "Add " + diff + " more to unlock " + nextTier.discount + "% bulk discount!";
+    }
+
+    return {
+      productId: productId,
+      quantity: qty,
+      basePrice: base,
+      unitPrice: unitPrice,
+      discountPercent: discountPercent,
+      regularLineTotal: regularLineTotal,
+      lineTotal: lineTotal,
+      savings: savings > 0 ? savings : 0,
+      isBulkDiscounted: discountPercent > 0,
+      nextTierHint: nextTierHint
+    };
+  }
+
+  function calculateCartTotals(lines) {
+    var regularSubtotal = 0;
+    var discountedSubtotal = 0;
+    var totalSavings = 0;
+    var lineCalculations = [];
+
+    lines.forEach(function (l) {
+      var p = CATALOG[l.id];
+      if (!p) return;
+      var qty = l.quantity != null ? l.quantity : (l.qty != null ? l.qty : 1);
+      var pricing = getTierPricing(l.id, qty, p.price);
+      regularSubtotal += pricing.regularLineTotal;
+      discountedSubtotal += pricing.lineTotal;
+      totalSavings += pricing.savings;
+      lineCalculations.push({
+        line: l,
+        pricing: pricing
+      });
+    });
+
+    return {
+      regularSubtotal: regularSubtotal,
+      discountedSubtotal: discountedSubtotal,
+      totalSavings: totalSavings,
+      hasSavings: totalSavings > 0,
+      lines: lineCalculations
+    };
+  }
+
   function getCatalog() {
     try {
       var raw = localStorage.getItem(CATALOG_KEY);
@@ -130,11 +248,7 @@
   }
 
   function cartSubtotal(lines) {
-    return lines.reduce(function (sum, l) {
-      var price = l.price != null ? l.price : (CATALOG[l.id] ? CATALOG[l.id].price : 0);
-      var qty = l.quantity != null ? l.quantity : (l.qty != null ? l.qty : 1);
-      return sum + (price * qty);
-    }, 0);
+    return calculateCartTotals(lines).discountedSubtotal;
   }
 
   function addLine(id, qty) {
@@ -248,8 +362,15 @@
   function renderDrawer() {
     if (!drawerBody || !drawerSubtotal) return;
     var cart = getCart();
-    var sub = cartSubtotal(cart);
-    drawerSubtotal.textContent = formatRupee(sub);
+    var totals = calculateCartTotals(cart);
+
+    if (totals.hasSavings) {
+      drawerSubtotal.innerHTML =
+        formatRupee(totals.discountedSubtotal) +
+        ' <span class="drawer-savings-badge" title="Total wholesale discount savings">Saved ' + formatRupee(totals.totalSavings) + '</span>';
+    } else {
+      drawerSubtotal.textContent = formatRupee(totals.discountedSubtotal);
+    }
 
     if (!cart.length) {
       drawerBody.innerHTML =
@@ -258,40 +379,51 @@
     }
 
     drawerBody.innerHTML = "";
-    cart.forEach(function (line) {
+    totals.lines.forEach(function (item) {
+      var line = item.line;
+      var pricing = item.pricing;
       var p = CATALOG[line.id];
       if (!p) return;
       var row = document.createElement("div");
-      row.className = "cart-line";
+      row.className = "cart-line" + (pricing.isBulkDiscounted ? " cart-line--bulk" : "");
       row.setAttribute("data-cart-line", line.id);
-      var lineTotal = p.price * line.qty;
+
+      var pricingHtml = '';
+      if (pricing.isBulkDiscounted) {
+        pricingHtml =
+          '<div class="cart-line-pricing">' +
+            '<span class="price-discounted">' + formatRupee(pricing.unitPrice) + '</span>' +
+            '<del class="price-original">' + formatRupee(pricing.basePrice) + '</del>' +
+            '<span class="badge-bulk-discount">' + pricing.discountPercent + '% Bulk Off</span>' +
+          '</div>';
+      } else {
+        pricingHtml =
+          '<div class="cart-line-pricing">' +
+            '<span class="price-regular">' + formatRupee(pricing.basePrice) + ' / ' + escapeHtml(p.unitLabel || "item") + '</span>' +
+          '</div>';
+      }
+
+      var hintHtml = pricing.nextTierHint
+        ? '<p class="tier-upsell-hint">💡 ' + escapeHtml(pricing.nextTierHint) + '</p>'
+        : '';
+
       row.innerHTML =
         '<div class="cart-line-thumb ' +
         p.thumb +
         '" aria-hidden="true"></div>' +
         '<div class="cart-line-info">' +
-        '<p class="cart-line-title"></p>' +
-        '<p class="cart-line-meta"></p>' +
+        '<p class="cart-line-title">' + escapeHtml(p.title) + '</p>' +
+        pricingHtml +
+        '<p class="cart-line-meta">' +
+          pricing.quantity + ' × ' + formatRupee(pricing.unitPrice) + ' = <strong>' + formatRupee(pricing.lineTotal) + '</strong>' +
+          (pricing.savings > 0 ? ' <span class="cart-line-saved">(Save ' + formatRupee(pricing.savings) + ')</span>' : '') +
+        '</p>' +
+        hintHtml +
         '<div class="cart-line-actions">' +
-        '<label class="sr-only" for="cart-qty-' +
-        line.id +
-        '">Quantity</label>' +
-        '<input type="number" min="1" max="99999" id="cart-qty-' +
-        line.id +
-        '" value="' +
-        line.qty +
-        '">' +
-        '<button type="button" class="cart-line-remove" data-remove="' +
-        line.id +
-        '">Delete</button>' +
-        "</div></div>";
-      row.querySelector(".cart-line-title").textContent = p.title;
-      row.querySelector(".cart-line-meta").textContent =
-        formatRupee(p.price) +
-        " × " +
-        line.qty +
-        " · " +
-        formatRupee(lineTotal);
+        '<label class="sr-only" for="cart-qty-' + line.id + '">Quantity</label>' +
+        '<input type="number" min="1" max="99999" id="cart-qty-' + line.id + '" value="' + line.qty + '">' +
+        '<button type="button" class="cart-line-remove" data-remove="' + line.id + '">Delete</button>' +
+        '</div></div>';
 
       var qtyInp = row.querySelector('input[type="number"]');
       qtyInp.addEventListener("change", function () {
@@ -308,7 +440,8 @@
 
   function renderCheckout() {
     var cart = getCart();
-    var sub = cartSubtotal(cart);
+    var totals = calculateCartTotals(cart);
+    var sub = totals.discountedSubtotal;
     var user = getConsumer();
 
     if (checkoutEmpty) {
@@ -331,28 +464,58 @@
 
     if (checkoutLines && checkoutSubtotalEl) {
       checkoutLines.innerHTML = "";
-      cart.forEach(function (line) {
+      totals.lines.forEach(function (item) {
+        var line = item.line;
+        var pricing = item.pricing;
         var p = CATALOG[line.id];
         if (!p) return;
         var li = document.createElement("li");
-        var lt = p.price * line.qty;
-        li.innerHTML =
+        li.className = "checkout-summary-line" + (pricing.isBulkDiscounted ? " checkout-line--bulk" : "");
+
+        var titleContent =
           "<span><strong>" +
           escapeHtml(p.title) +
           "</strong> × " +
           line.qty +
-          "</span><span>" +
-          formatRupee(lt) +
+          (pricing.isBulkDiscounted ? ' <span class="badge-bulk-discount-sm">' + pricing.discountPercent + '% Off</span>' : '') +
           "</span>";
+
+        var priceContent =
+          "<span>" +
+          (pricing.isBulkDiscounted ? '<del class="checkout-del">' + formatRupee(pricing.regularLineTotal) + '</del> ' : '') +
+          formatRupee(pricing.lineTotal) +
+          "</span>";
+
+        li.innerHTML = titleContent + priceContent;
         checkoutLines.appendChild(li);
       });
-      checkoutSubtotalEl.textContent = formatRupee(sub);
+
+      if (totals.hasSavings) {
+        checkoutSubtotalEl.innerHTML =
+          formatRupee(sub) +
+          ' <span class="checkout-savings-pill">Total Savings: ' + formatRupee(totals.totalSavings) + '</span>';
+      } else {
+        checkoutSubtotalEl.textContent = formatRupee(sub);
+      }
     }
 
     if (cartSnapshot) {
       cartSnapshot.value = JSON.stringify({
-        lines: cart,
+        lines: totals.lines.map(function (it) {
+          return {
+            id: it.line.id,
+            name: it.line.name,
+            qty: it.line.qty,
+            basePrice: it.pricing.basePrice,
+            unitPrice: it.pricing.unitPrice,
+            discountPercent: it.pricing.discountPercent,
+            lineTotal: it.pricing.lineTotal,
+            savings: it.pricing.savings
+          };
+        }),
+        regularSubtotal: totals.regularSubtotal,
         subtotal: sub,
+        totalSavings: totals.totalSavings,
         currency: "INR",
       });
     }
@@ -1020,20 +1183,62 @@
 
   if (productGrid) {
     productGrid.addEventListener("click", function (e) {
-      var btn = e.target.closest("[data-add]");
-      if (!btn) return;
+      // 1. Add to Cart button
+      var addBtn = e.target.closest("[data-add]");
+      if (addBtn) {
+        var id = addBtn.getAttribute("data-add");
+        var card = addBtn.closest(".product-card");
+        var inp = card ? card.querySelector('[data-qty-for="' + id + '"]') : null;
+        var qty = inp ? inp.value : 1;
+        addLine(id, qty);
+        addBtn.textContent = "Added ✓";
+        setTimeout(function () {
+          addBtn.textContent = "Add to Cart";
+        }, 1200);
+        return;
+      }
 
+      // 2. Stepper Plus / Minus buttons
+      var stepBtn = e.target.closest(".btn-stepper-step");
+      if (stepBtn) {
+        var targetId = stepBtn.getAttribute("data-target");
+        var stepDir = parseInt(stepBtn.getAttribute("data-step"), 10) || 1;
+        var targetCard = stepBtn.closest(".product-card");
+        var targetInp = targetCard ? targetCard.querySelector('[data-qty-for="' + targetId + '"]') : null;
+        if (targetInp) {
+          var curVal = parseInt(targetInp.value, 10) || 1;
+          var newVal = Math.max(1, curVal + stepDir);
+          targetInp.value = newVal;
+          updateCardBulkCalculator(targetCard, targetId);
+        }
+        return;
+      }
 
+      // 3. Clickable tier table rows
+      var tierRow = e.target.closest(".tier-row");
+      if (tierRow) {
+        var rowCard = tierRow.closest(".product-card");
+        var rowProdId = rowCard ? rowCard.getAttribute("data-product-id") : null;
+        var tierMin = parseInt(tierRow.getAttribute("data-min"), 10) || 1;
+        if (rowCard && rowProdId) {
+          var rowInp = rowCard.querySelector('[data-qty-for="' + rowProdId + '"]');
+          if (rowInp) {
+            rowInp.value = tierMin;
+            updateCardBulkCalculator(rowCard, rowProdId);
+          }
+        }
+      }
+    });
 
-      var id = btn.getAttribute("data-add");
-      var card = btn.closest(".product-card");
-      var inp = card ? card.querySelector('[data-qty-for="' + id + '"]') : null;
-      var qty = inp ? inp.value : 1;
-      addLine(id, qty);
-      btn.textContent = "Added ✓";
-      setTimeout(function () {
-        btn.textContent = "Add to Cart";
-      }, 1200);
+    // Handle typing in quantity input
+    productGrid.addEventListener("input", function (e) {
+      var inp = e.target.closest(".qty-stepper");
+      if (!inp) return;
+      var card = inp.closest(".product-card");
+      var prodId = inp.getAttribute("data-qty-for");
+      if (card && prodId) {
+        updateCardBulkCalculator(card, prodId);
+      }
     });
   }
 
@@ -1175,20 +1380,26 @@
 
       var orderId = "GLC-" + Date.now().toString(36).toUpperCase();
       var fd = new FormData(form);
-      var lines = cart.map(function (line) {
+      var cartCalc = calculateCartTotals(cart);
+      var lines = cartCalc.lines.map(function (item) {
+        var line = item.line;
+        var pricing = item.pricing;
         var p = CATALOG[line.id];
         var title = line.name || (p ? p.title : "");
-        var price = line.price != null ? line.price : (p ? p.price : 0);
-        var quantity = line.quantity != null ? line.quantity : line.qty;
         return {
           id: line.id,
           name: title,
-          price: price,
-          quantity: quantity,
-          lineTotal: price * quantity
+          price: pricing.basePrice,
+          unitPrice: pricing.unitPrice,
+          discountPercent: pricing.discountPercent,
+          quantity: pricing.quantity,
+          regularLineTotal: pricing.regularLineTotal,
+          lineTotal: pricing.lineTotal,
+          savings: pricing.savings,
+          isBulkDiscounted: pricing.isBulkDiscounted
         };
       });
-      var subtotal = cartSubtotal(cart);
+      var subtotal = cartCalc.discountedSubtotal;
       var paymentMethod = String(fd.get("payment_method") || "razorpay");
 
       var orderPayload = {
@@ -1196,6 +1407,7 @@
         createdAt: new Date().toISOString(),
         status: "placed",
         lines: lines,
+        total_savings: cartCalc.totalSavings,
         customer: {
           name: String(fd.get("name") || ""),
           email: String(fd.get("email") || ""),
@@ -1222,6 +1434,7 @@
             createdAt: orderPayload.createdAt,
             status: orderPayload.status || "placed",
             subtotal: subtotal,
+            total_savings: cartCalc.totalSavings,
             lines: lines,
             customer: orderPayload.customer
           });
@@ -1331,22 +1544,19 @@
                 placeOrderBtn.disabled = false;
                 placeOrderBtn.textContent = "Place your order";
               }
-              showError("Payment window was closed. Please complete the online payment to place your order.");
             }
           }
         };
 
         try {
           var rzp = new Razorpay(options);
-          if (typeof rzp.on === "function") {
-            rzp.on('payment.failed', function (resp) {
-              if (placeOrderBtn) {
-                placeOrderBtn.disabled = false;
-                placeOrderBtn.textContent = "Place your order";
-              }
-              showError("Razorpay payment failed: " + (resp.error ? resp.error.description : "Please try again."));
-            });
-          }
+          rzp.on("payment.failed", function (resp) {
+            showError("Payment failed: " + ((resp.error && resp.error.description) || "Unknown payment gateway error."));
+            if (placeOrderBtn) {
+              placeOrderBtn.disabled = false;
+              placeOrderBtn.textContent = "Place your order";
+            }
+          });
           rzp.open();
         } catch (err) {
           if (placeOrderBtn) {
@@ -1395,20 +1605,81 @@
     });
   }
 
+  function updateCardBulkCalculator(card, productId) {
+    if (!card) return;
+    var inp = card.querySelector('[data-qty-for="' + productId + '"]');
+    var qty = inp ? Math.max(1, parseInt(inp.value, 10) || 1) : 1;
+    if (inp && inp.value !== String(qty) && document.activeElement !== inp) {
+      inp.value = qty;
+    }
+
+    var p = CATALOG[productId];
+    if (!p) return;
+
+    var tierResult = getTierPricing(productId, qty, p.price);
+
+    // Highlight matching table row
+    var tableRows = card.querySelectorAll(".bulk-tier-table tbody tr");
+    tableRows.forEach(function (tr) {
+      var min = parseInt(tr.getAttribute("data-min"), 10) || 1;
+      var maxAttr = tr.getAttribute("data-max");
+      var max = (maxAttr === "null" || maxAttr === "Infinity" || !maxAttr) ? Infinity : parseInt(maxAttr, 10);
+
+      if (qty >= min && qty <= max) {
+        tr.classList.add("is-active");
+      } else {
+        tr.classList.remove("is-active");
+      }
+    });
+
+    // Update live calculation elements
+    var totalEl = card.querySelector(".card-calc-total");
+    var labelQtyEl = card.querySelector(".card-calc-qty");
+    var savingsEl = card.querySelector(".card-calc-savings");
+    var upsellEl = card.querySelector(".card-calc-upsell");
+
+    if (totalEl) totalEl.textContent = formatRupee(tierResult.lineTotal);
+    if (labelQtyEl) labelQtyEl.textContent = qty;
+
+    if (savingsEl) {
+      if (tierResult.savings > 0) {
+        savingsEl.style.display = "inline-block";
+        savingsEl.textContent = "🎉 You save " + tierResult.discountPercent + "% (" + formatRupee(tierResult.savings) + " off)";
+      } else {
+        savingsEl.style.display = "none";
+      }
+    }
+
+    if (upsellEl) {
+      if (tierResult.nextTierHint) {
+        upsellEl.style.display = "block";
+        upsellEl.innerHTML = "💡 Add <strong>" + tierResult.nextTierHint.needed + " more</strong> to unlock <strong>" + tierResult.nextTierHint.discount + "% wholesale discount</strong>!";
+      } else if (tierResult.discountPercent > 0) {
+        upsellEl.style.display = "block";
+        upsellEl.innerHTML = "🌟 <strong>Top wholesale discount applied!</strong>";
+      } else {
+        upsellEl.style.display = "none";
+      }
+    }
+  }
+
   function renderStorefrontProducts() {
+    var productGrid = document.getElementById("product-grid");
     if (!productGrid) return;
+    
     productGrid.innerHTML = "";
     
-    Object.keys(CATALOG).forEach(function (id) {
+    var keys = Object.keys(CATALOG);
+    if (keys.length === 0) return;
+    
+    keys.forEach(function (id) {
       var p = CATALOG[id];
       if (!p) return;
       
       var card = document.createElement("article");
       card.className = "product-card";
       card.setAttribute("data-product-id", id);
-      
-      var searchTerms = (id + " " + p.title + " " + (p.tag || "") + " " + (p.desc || "")).toLowerCase();
-      card.setAttribute("data-search", searchTerms);
+      card.setAttribute("data-search", (p.title + " " + (p.tag || "") + " " + (p.desc || "")).toLowerCase());
       
       var mediaHtml = '';
       if (p.image) {
@@ -1430,6 +1701,51 @@
         });
         featuresHtml += '</ul>';
       }
+
+      // Interactive Tier Pricing Table & Breakdown
+      var tiers = (PRICING_TIERS && PRICING_TIERS[id]) || DEFAULT_PRICING_TIERS[id] || [];
+      var tiersTableHtml = '';
+      if (tiers.length > 0) {
+        tiersTableHtml += '<div class="product-bulk-widget">';
+        tiersTableHtml += '  <div class="bulk-tier-table-wrap">';
+        tiersTableHtml += '    <table class="bulk-tier-table" role="table" aria-label="Wholesale pricing tiers for ' + escapeHtml(p.title) + '">';
+        tiersTableHtml += '      <thead>';
+        tiersTableHtml += '        <tr>';
+        tiersTableHtml += '          <th>Quantity</th>';
+        tiersTableHtml += '          <th>Unit Price</th>';
+        tiersTableHtml += '          <th>Discount</th>';
+        tiersTableHtml += '        </tr>';
+        tiersTableHtml += '      </thead>';
+        tiersTableHtml += '      <tbody>';
+        
+        tiers.forEach(function (t) {
+          var unitPrice = t.fixedPrice != null ? t.fixedPrice : Math.round(p.price * (1 - (t.discount || 0) / 100));
+          var qtyLabel = t.max ? (t.min + '–' + t.max + ' units') : (t.min + '+ units');
+          var tagClass = t.discount > 0 ? 'tier-tag-bulk' : 'tier-tag-base';
+          var tagLabel = t.discount > 0 ? ('Save ' + t.discount + '%') : 'Standard';
+          
+          tiersTableHtml += '        <tr class="tier-row" data-min="' + t.min + '" data-max="' + (t.max || '') + '">';
+          tiersTableHtml += '          <td>' + escapeHtml(qtyLabel) + '</td>';
+          tiersTableHtml += '          <td><span class="tier-table-price">' + formatRupee(unitPrice) + '</span></td>';
+          tiersTableHtml += '          <td><span class="tier-tag-pill ' + tagClass + '">' + tagLabel + '</span></td>';
+          tiersTableHtml += '        </tr>';
+        });
+        
+        tiersTableHtml += '      </tbody>';
+        tiersTableHtml += '    </table>';
+        tiersTableHtml += '  </div>';
+        
+        // Live Calc Block
+        tiersTableHtml += '  <div class="card-live-calc">';
+        tiersTableHtml += '    <div class="card-calc-row">';
+        tiersTableHtml += '      <span class="card-calc-label">Total for <strong class="card-calc-qty">1</strong> unit:</span>';
+        tiersTableHtml += '      <span class="card-calc-total">' + formatRupee(p.price) + '</span>';
+        tiersTableHtml += '    </div>';
+        tiersTableHtml += '    <div class="card-calc-savings" style="display: none;"></div>';
+        tiersTableHtml += '    <div class="card-calc-upsell" style="display: none;"></div>';
+        tiersTableHtml += '  </div>';
+        tiersTableHtml += '</div>';
+      }
       
       card.innerHTML = 
         mediaHtml +
@@ -1437,19 +1753,25 @@
         tagHtml +
         descHtml +
         featuresHtml +
+        tiersTableHtml +
         '<div class="product-buy">' +
         '  <div class="product-price-row">' +
         '    <p class="product-price"><span class="currency">₹</span>' + p.price + '<span class="per">/ ' + escapeHtml(p.unitLabel || "item") + '</span></p>' +
         '    <span class="product-stock">In stock</span>' +
         '  </div>' +
         '  <div class="product-buy-row">' +
-        '    <label class="sr-only" for="qty-' + id + '">Quantity</label>' +
-        '    <input type="number" id="qty-' + id + '" class="qty-stepper" min="1" max="9999" value="1" data-qty-for="' + id + '">' +
+        '    <div class="product-stepper-control">' +
+        '      <button type="button" class="btn-stepper-step btn-minus" data-step="-1" data-target="' + id + '" aria-label="Decrease quantity">−</button>' +
+        '      <label class="sr-only" for="qty-' + id + '">Quantity</label>' +
+        '      <input type="number" id="qty-' + id + '" class="qty-stepper" min="1" max="9999" value="1" data-qty-for="' + id + '">' +
+        '      <button type="button" class="btn-stepper-step btn-plus" data-step="1" data-target="' + id + '" aria-label="Increase quantity">+</button>' +
+        '    </div>' +
         '    <button type="button" class="btn-add-cart" data-add="' + id + '">Add to Cart</button>' +
         '  </div>' +
         '</div>';
         
       productGrid.appendChild(card);
+      updateCardBulkCalculator(card, id);
     });
   }
 
@@ -1559,6 +1881,7 @@
       }
     });
 
+    // Fetch live Catalog from Supabase
     window.maahiSupabase.fetchCatalog().then(function (dbCatalog) {
       if (dbCatalog) {
         localStorage.setItem(CATALOG_KEY, JSON.stringify(dbCatalog));
@@ -1569,6 +1892,20 @@
     }).catch(function (err) {
       console.warn("Failed to fetch catalog from Supabase on load:", err);
     });
+
+    // Fetch live Pricing Tiers from Supabase
+    if (window.maahiSupabase.fetchPricingTiers) {
+      window.maahiSupabase.fetchPricingTiers().then(function (dbTiers) {
+        if (dbTiers && Object.keys(dbTiers).length > 0) {
+          localStorage.setItem("maahi_pricing_tiers_v1", JSON.stringify(dbTiers));
+          PRICING_TIERS = dbTiers;
+          renderStorefrontProducts();
+          refreshAll();
+        }
+      }).catch(function (err) {
+        console.warn("Failed to fetch pricing tiers from Supabase on load:", err);
+      });
+    }
   }
   window.maahiInitialized = true;
 })();
