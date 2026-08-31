@@ -967,30 +967,23 @@ a:hover {
   color: #ffffff;
 }
 
-.btn-quote-call {
+.quote-phone-badge {
   flex: 1;
   min-height: 40px;
   background: #f0fdf4;
   color: #15803d;
-  border: 1.5px solid #22c55e;
+  border: 1.5px solid #86efac;
   border-radius: 6px;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  text-decoration: none;
   padding: 0.45rem 0.6rem;
   white-space: nowrap;
-  transition: all 0.2s ease;
   box-sizing: border-box;
-}
-
-.btn-quote-call:hover {
-  background: #22c55e;
-  color: #ffffff;
-  border-color: #22c55e;
+  user-select: text;
 }
 
 .quote-feedback {
@@ -2829,7 +2822,7 @@ html, body {
 
   .btn-bulk-quote,
   .btn-whatsapp-quote,
-  .btn-quote-call {
+  .quote-phone-badge {
     height: 44px;
     min-height: 44px;
     font-size: 0.86rem;
