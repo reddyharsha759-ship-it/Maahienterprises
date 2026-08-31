@@ -1964,12 +1964,20 @@
         '      <input type="tel" id="quote-phone-' + id + '" class="quote-phone-input" placeholder="10-digit Mobile" maxlength="15" />' +
         '    </div>' +
         '  </div>' +
-        '  <button type="button" class="btn-bulk-quote">' +
-        '    <svg class="bulk-quote-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">' +
-        '      <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>' +
-        '    </svg>' +
-        '    <span>Request Bulk / Wholesale Quote</span>' +
-        '  </button>' +
+        '  <div class="quote-action-row">' +
+        '    <button type="button" class="btn-bulk-quote">' +
+        '      <svg class="bulk-quote-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor">' +
+        '        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>' +
+        '      </svg>' +
+        '      <span>Request Quote</span>' +
+        '    </button>' +
+        '    <a href="tel:+919513511062" class="btn-quote-call" title="Call or WhatsApp Direct Support: +91 95135 11062">' +
+        '      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">' +
+        '        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>' +
+        '      </svg>' +
+        '      <span>+91 95135 11062</span>' +
+        '    </a>' +
+        '  </div>' +
         '  <div class="quote-feedback" style="display: none;"></div>' +
         '</div>';
 
