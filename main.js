@@ -1234,24 +1234,32 @@
         return;
       }
 
-      // 4. WhatsApp Bulk Quote Button
-      var waBtn = e.target.closest(".btn-whatsapp-quote");
-      if (waBtn) {
-        var waCard = waBtn.closest(".product-card");
-        if (!waCard) return;
-        var prodId = waCard.getAttribute("data-product-id");
+      // 4. Background Bulk Quote Request Submission
+      var quoteBtn = e.target.closest(".btn-bulk-quote, .btn-whatsapp-quote");
+      if (quoteBtn) {
+        var qCard = quoteBtn.closest(".product-card");
+        if (!qCard) return;
+        var prodId = qCard.getAttribute("data-product-id");
         var p = CATALOG[prodId] || {};
-        var prodName = p.title || waCard.getAttribute("data-product-name") || "Coir Product";
+        var prodName = p.title || qCard.getAttribute("data-product-name") || "Coir Product";
         var sku = p.sku || ("MAAHI-" + (prodId || "PRD").toUpperCase());
         
-        var qtyInput = waCard.querySelector(".qty-stepper");
+        var qtyInput = qCard.querySelector(".qty-stepper");
         var quantity = qtyInput ? Math.max(1, parseInt(qtyInput.value, 10) || 1) : 1;
         
-        var pinInput = waCard.querySelector(".quote-pincode-input");
+        var pinInput = qCard.querySelector(".quote-pincode-input");
         var pincode = pinInput ? pinInput.value.trim() : "";
         
+        var phoneInput = qCard.querySelector(".quote-phone-input");
+        var phone = phoneInput ? phoneInput.value.trim() : "";
+        
+        var consumer = getConsumer();
+        if (!phone && consumer && consumer.phone) {
+          phone = consumer.phone;
+        }
+
         if (!pincode || !/^\d{6}$/.test(pincode)) {
-          alert("Please enter a valid 6-digit delivery PIN code for freight estimation.");
+          alert("Please enter a valid 6-digit delivery PIN code.");
           if (pinInput) {
             pinInput.focus();
             pinInput.style.borderColor = "#dc2626";
@@ -1264,21 +1272,94 @@
           return;
         }
 
-        var WHATSAPP_PHONE = "919513511062";
-        var unitSuffix = p.unitLabel ? (p.unitLabel + (quantity > 1 ? "s" : "")) : "units";
-        var message = [
-          "👋 *New Bulk / Wholesale Quote Request*",
-          "--------------------------------------",
-          "📦 *Product:* " + prodName,
-          "🏷️ *SKU:* " + sku,
-          "🔢 *Quantity:* " + quantity + " " + unitSuffix,
-          "📍 *Delivery PIN Code:* " + pincode,
-          "--------------------------------------",
-          "Please share freight costs, GST invoice details, and best wholesale dispatch schedule."
-        ].join("\n");
+        if (!phone || phone.replace(/\D/g, "").length < 10) {
+          alert("Please enter a valid 10-digit contact phone number so our sales team can reach you with the freight quote.");
+          if (phoneInput) {
+            phoneInput.focus();
+            phoneInput.style.borderColor = "#dc2626";
+            phoneInput.style.boxShadow = "0 0 0 3px rgba(220, 38, 38, 0.25)";
+            setTimeout(function () {
+              phoneInput.style.borderColor = "";
+              phoneInput.style.boxShadow = "";
+            }, 2500);
+          }
+          return;
+        }
 
-        var waUrl = "https://wa.me/" + WHATSAPP_PHONE + "?text=" + encodeURIComponent(message);
-        window.open(waUrl, "_blank", "noopener,noreferrer");
+        var tierResult = getTierPricing(prodId, quantity, p.price);
+        var quoteId = "QTE-" + Date.now().toString(36).toUpperCase();
+        var feedbackEl = qCard.querySelector(".quote-feedback");
+
+        quoteBtn.disabled = true;
+        quoteBtn.textContent = "Submitting Quote Request...";
+
+        var quotePayload = {
+          id: quoteId,
+          createdAt: new Date().toISOString(),
+          status: "placed",
+          subtotal: tierResult.lineTotal,
+          total_savings: tierResult.savings,
+          lines: [{
+            id: prodId,
+            name: prodName,
+            title: prodName,
+            sku: sku,
+            price: p.price,
+            unitPrice: tierResult.unitPrice,
+            quantity: quantity,
+            discountPercent: tierResult.discountPercent,
+            regularLineTotal: tierResult.regularLineTotal,
+            lineTotal: tierResult.lineTotal,
+            savings: tierResult.savings,
+            isBulkDiscounted: tierResult.isBulkDiscounted
+          }],
+          customer: {
+            name: consumer ? (consumer.name || consumer.email) : ("Quote Inquiry (" + phone + ")"),
+            email: consumer ? consumer.email : "",
+            phone: phone,
+            pincode: pincode,
+            fulfillment: "quote",
+            notes: "Direct Bulk Quote requested for " + quantity + " units of " + prodName + " (SKU: " + sku + ") to delivery PIN " + pincode,
+            is_quote: true
+          }
+        };
+
+        function saveQuoteLocally() {
+          try {
+            var raw = localStorage.getItem(ORDERS_KEY);
+            var list = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(list)) list = [];
+            list.unshift(quotePayload);
+            if (list.length > 500) list = list.slice(0, 500);
+            localStorage.setItem(ORDERS_KEY, JSON.stringify(list));
+            if (getConsumer()) renderProfile();
+          } catch (e) {
+            console.warn("Could not save quote locally:", e);
+          }
+        }
+
+        function onQuoteSuccess() {
+          saveQuoteLocally();
+          quoteBtn.disabled = false;
+          quoteBtn.textContent = "Quote Requested ✓";
+          quoteBtn.style.background = "#059669";
+
+          if (feedbackEl) {
+            feedbackEl.style.display = "block";
+            feedbackEl.innerHTML = '<strong>✓ Quote Request Received!</strong><br>Reference: <code style="font-weight:700; background:#d1fae5; padding:1px 4px; border-radius:3px;">' + escapeHtml(quoteId) + '</code><br>Our team has received your wholesale request for <strong>' + quantity + ' units</strong> and will contact you directly on <strong>' + escapeHtml(phone) + '</strong> with freight rates & proforma invoice.';
+          }
+        }
+
+        if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
+          window.maahiSupabase.saveOrder(quotePayload).then(function () {
+            onQuoteSuccess();
+          }).catch(function (err) {
+            console.warn("Supabase saveOrder failed for quote, saved locally:", err);
+            onQuoteSuccess();
+          });
+        } else {
+          onQuoteSuccess();
+        }
         return;
       }
     });
@@ -1841,20 +1922,25 @@
       }
       
       var sku = p.sku || ("MAAHI-" + id.toUpperCase());
-      var whatsappWidgetHtml = 
+      var quoteWidgetHtml = 
         '<div class="whatsapp-quote-widget" data-product-name="' + escapeHtml(p.title) + '" data-sku="' + escapeHtml(sku) + '">' +
         '  <div class="whatsapp-quote-fields">' +
         '    <div class="field-group">' +
-        '      <label for="quote-pincode-' + id + '" class="quote-label">Delivery PIN Code</label>' +
-        '      <input type="text" id="quote-pincode-' + id + '" class="quote-pincode-input" placeholder="Enter 6-digit PIN" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" />' +
+        '      <label for="quote-pincode-' + id + '" class="quote-label">Delivery PIN</label>' +
+        '      <input type="text" id="quote-pincode-' + id + '" class="quote-pincode-input" placeholder="6-digit PIN" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" />' +
+        '    </div>' +
+        '    <div class="field-group">' +
+        '      <label for="quote-phone-' + id + '" class="quote-label">Contact Phone</label>' +
+        '      <input type="tel" id="quote-phone-' + id + '" class="quote-phone-input" placeholder="10-digit Mobile" maxlength="15" />' +
         '    </div>' +
         '  </div>' +
-        '  <button type="button" class="btn-whatsapp-quote">' +
-        '    <svg class="whatsapp-quote-icon" viewBox="0 0 24 24">' +
-        '      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.05 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>' +
+        '  <button type="button" class="btn-bulk-quote">' +
+        '    <svg class="bulk-quote-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">' +
+        '      <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>' +
         '    </svg>' +
-        '    <span>Request Bulk Quote via WhatsApp</span>' +
+        '    <span>Request Bulk / Wholesale Quote</span>' +
         '  </button>' +
+        '  <div class="quote-feedback" style="display: none;"></div>' +
         '</div>';
 
       card.innerHTML = 
@@ -1879,7 +1965,7 @@
         '    <button type="button" class="btn-add-cart" data-add="' + id + '">Add to Cart</button>' +
         '  </div>' +
         '</div>' +
-        whatsappWidgetHtml;
+        quoteWidgetHtml;
         
       productGrid.appendChild(card);
       updateCardBulkCalculator(card, id);

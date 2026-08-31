@@ -1329,6 +1329,14 @@
     // Customer Profile Info
     html += '<section class="detail-section">';
     html += '  <h3 class="detail-section-title">Customer Profile</h3>';
+    if (c.is_quote || (order.id && order.id.startsWith("QTE-")) || c.fulfillment === "quote") {
+      html += '  <div style="margin-bottom:0.6rem; background:rgba(34,197,94,0.15); border:1px solid #22c55e; border-radius:6px; padding:0.4rem 0.65rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.3rem;">';
+      html += '    <span style="font-size:0.75rem; font-weight:800; color:#15803d;">📋 WHOLESALE BULK QUOTE INQUIRY</span>';
+      if (c.pincode) {
+        html += '    <span style="font-size:0.75rem; font-family:monospace; font-weight:700; color:#15803d;">Destination PIN: ' + escapeHtml(c.pincode) + '</span>';
+      }
+      html += '  </div>';
+    }
     if (c.is_b2b || c.gstin || order.is_b2b || order.gstin) {
       html += '  <div style="margin-bottom:0.6rem; background:rgba(45,106,79,0.12); border:1px solid rgba(45,106,79,0.3); border-radius:6px; padding:0.4rem 0.65rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.3rem;">';
       html += '    <span style="font-size:0.75rem; font-weight:800; color:var(--accent);">🏢 B2B TAX ORDER</span>';
@@ -1344,6 +1352,12 @@
     html += '  <div class="detail-row"><span class="detail-label">Email</span><span class="detail-val">' + escapeHtml(c.email || "—") + '</span></div>';
     if (c.phone) {
       html += '  <div class="detail-row"><span class="detail-label">Phone Number</span><span class="detail-val">' + escapeHtml(c.phone) + '</span></div>';
+      var rawPhone = c.phone.replace(/\D/g, "");
+      var intlPhone = rawPhone.length === 10 ? ("91" + rawPhone) : rawPhone;
+      html += '  <div style="margin-top:0.6rem; display:flex; gap:0.5rem;">';
+      html += '    <a href="tel:' + escapeHtml(c.phone) + '" style="flex:1; text-align:center; background:#1b4332; color:#fff; padding:0.45rem 0.65rem; border-radius:6px; font-size:0.78rem; font-weight:700; text-decoration:none;">📞 Call Lead</a>';
+      html += '    <a href="https://wa.me/' + intlPhone + '?text=' + encodeURIComponent('Hi, regarding your bulk quote request for MAAHI PRODUCTS (Ref: ' + order.id + ')...') + '" target="_blank" rel="noopener" style="flex:1; text-align:center; background:#128c7e; color:#fff; padding:0.45rem 0.65rem; border-radius:6px; font-size:0.78rem; font-weight:700; text-decoration:none;">💬 WhatsApp Lead</a>';
+      html += '  </div>';
     }
     html += '</section>';
 
@@ -1354,10 +1368,13 @@
       ship: "Deliver to Location",
       pickup: "Customer Arrange Pickup",
       export: "Export Documentation Request",
-      quote: "Quote Request Only"
+      quote: "Wholesale Quote Request"
     };
     var fulfillText = fulfillMap[c.fulfillment] || c.fulfillment || "—";
     html += '  <div class="detail-row"><span class="detail-label">Fulfillment type</span><span class="detail-val">' + escapeHtml(fulfillText) + '</span></div>';
+    if (c.pincode) {
+      html += '  <div class="detail-row"><span class="detail-label">Delivery PIN Code</span><span class="detail-val" style="font-weight:700; color:var(--accent);">' + escapeHtml(c.pincode) + '</span></div>';
+    }
     html += '  <div class="detail-row"><span class="detail-label">Target Date</span><span class="detail-val">' + escapeHtml(c.target_date || "—") + '</span></div>';
     if (c.region) {
       html += '  <div class="detail-row"><span class="detail-label">City / Region</span><span class="detail-val">' + escapeHtml(c.region) + '</span></div>';

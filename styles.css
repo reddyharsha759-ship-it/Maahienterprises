@@ -1509,9 +1509,10 @@ tbody td:first-child {
   color: #166534;
 }
 
-.quote-pincode-input {
+.quote-pincode-input,
+.quote-phone-input {
   width: 100%;
-  padding: 0.4rem 0.6rem;
+  padding: 0.45rem 0.65rem;
   font-size: 0.85rem;
   border: 1px solid #86efac;
   border-radius: 6px;
@@ -1529,44 +1530,74 @@ tbody td:first-child {
   margin: 0;
 }
 
-.quote-pincode-input:focus {
+.quote-pincode-input:focus,
+.quote-phone-input:focus {
   border-color: #22c55e;
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
 }
 
+.btn-bulk-quote,
 .btn-whatsapp-quote {
   width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  background: #128c7e;
+  background: #1b4332;
   color: #ffffff;
   border: none;
-  padding: 0.55rem 0.85rem;
-  font-size: 0.84rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.86rem;
   font-weight: 700;
   border-radius: 6px;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(18, 140, 126, 0.2);
+  box-shadow: 0 1px 3px rgba(27, 67, 50, 0.25);
   transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
+.btn-bulk-quote:hover,
 .btn-whatsapp-quote:hover {
-  background: #075e54;
-  box-shadow: 0 3px 8px rgba(7, 94, 84, 0.3);
+  background: #2d6a4f;
+  box-shadow: 0 3px 8px rgba(45, 106, 79, 0.35);
   transform: translateY(-1px);
 }
 
+.btn-bulk-quote:active,
 .btn-whatsapp-quote:active {
   transform: translateY(0);
 }
 
+.btn-bulk-quote:disabled,
+.btn-whatsapp-quote:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.bulk-quote-icon,
 .whatsapp-quote-icon {
   flex-shrink: 0;
   width: 1.1rem;
   height: 1.1rem;
   fill: currentColor;
+}
+
+.quote-feedback {
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #065f46;
+  line-height: 1.4;
+  animation: fadeInQuoteFeedback 0.25s ease;
+}
+
+@keyframes fadeInQuoteFeedback {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* B2B GST Checkout Section */
