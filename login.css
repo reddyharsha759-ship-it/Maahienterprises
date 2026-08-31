@@ -130,6 +130,16 @@ body {
   color: var(--gold);
 }
 
+.visual-logo .logo-coir {
+  color: #d48b59; /* Warm earthy cocopeat brown on dark visual cover */
+  font-weight: 700;
+}
+
+.visual-logo .logo-products {
+  color: var(--gold);
+  font-weight: 600;
+}
+
 .visual-tagline {
   font-family: var(--font-display);
   font-size: 2.25rem;

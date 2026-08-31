@@ -135,6 +135,16 @@ body {
   font-weight: 600;
 }
 
+.sidebar-logo .logo-coir {
+  color: #d48b59; /* Warm earthy cocopeat brown on dark sidebar */
+  font-weight: 700;
+}
+
+.sidebar-logo .logo-products {
+  color: var(--accent-light, #52b788);
+  font-weight: 600;
+}
+
 .sidebar-badge {
   display: inline-block;
   font-size: 0.68rem;

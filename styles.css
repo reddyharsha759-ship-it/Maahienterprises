@@ -181,6 +181,18 @@ a:hover {
   font-weight: 600;
 }
 
+.logo .logo-coir,
+.logo span.logo-coir {
+  color: #8b4513; /* Earthy Cocopeat & Coir Brown */
+  font-weight: 700;
+}
+
+.logo .logo-products,
+.logo span.logo-products {
+  color: var(--accent); /* Deep Forest Green */
+  font-weight: 600;
+}
+
 .nav ul {
   list-style: none;
   margin: 0;

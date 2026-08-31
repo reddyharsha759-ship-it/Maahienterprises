@@ -736,7 +736,7 @@
     html += '  <table class="header-table">';
     html += '    <tr>';
     html += '      <td style="vertical-align: top;">';
-    html += '        <div class="brand-name">MAAHI COCOPEAT AND COIR PRODUCTS</div>';
+    html += '        <div class="brand-name">MAAHI <span style="color:#8b4513;">COCOPEAT &amp; COIR</span> <span style="color:#2d6a4f;">PRODUCTS</span></div>';
     html += '        <div class="brand-tagline">Sustainable Cocopeat &amp; Coir Media</div>';
     html += '        <div style="font-size:11px; color:#555; margin-top:4px;">GSTIN: <strong>33AACFM1234F1Z9</strong> (Registered)</div>';
     html += '      </td>';
