@@ -553,17 +553,33 @@ a:hover {
 }
 
 .product-card {
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
-  padding: 1.6rem 1.4rem;
+  padding: 1.5rem 1.35rem;
   border-radius: var(--radius);
-  border: 1px solid rgba(45, 106, 79, 0.1);
+  border: 1px solid rgba(45, 106, 79, 0.12);
   box-shadow: 0 10px 30px rgba(28, 43, 36, 0.06);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.product-card-media {
+  height: 200px;
+  width: 100%;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 1rem;
 }
 
 .product-card h3 {
   font-family: var(--font-display);
   margin: 0 0 0.35rem;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   color: var(--bg-deep);
 }
 
@@ -584,7 +600,7 @@ a:hover {
 }
 
 .product-card ul {
-  margin: 0;
+  margin: 0 0 1rem;
   padding-left: 1.1rem;
   color: var(--text-muted);
   font-size: 0.95rem;
@@ -594,6 +610,375 @@ a:hover {
   margin-bottom: 0.35rem;
 }
 
+/* --- PRODUCT BULK & WHOLESALE WIDGET --- */
+.product-bulk-widget {
+  margin: 0.75rem 0 1rem;
+  background: #faf8f5;
+  border: 1px solid rgba(45, 106, 79, 0.15);
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bulk-tier-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bulk-tier-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.84rem;
+  background: transparent;
+  margin: 0;
+}
+
+.bulk-tier-table thead th {
+  background: #ebe6dc;
+  color: var(--text);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid rgba(45, 106, 79, 0.15);
+  text-align: left;
+}
+
+.bulk-tier-table thead th:last-child {
+  text-align: right;
+}
+
+.bulk-tier-table tbody tr.tier-row {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid rgba(45, 106, 79, 0.08);
+}
+
+.bulk-tier-table tbody tr.tier-row:last-child {
+  border-bottom: none;
+}
+
+.bulk-tier-table tbody tr.tier-row td {
+  padding: 0.5rem 0.65rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  vertical-align: middle;
+  border-bottom: none;
+}
+
+.bulk-tier-table tbody tr.tier-row td:last-child {
+  text-align: right;
+}
+
+.bulk-tier-table tbody tr.tier-row.is-active {
+  background: rgba(64, 145, 108, 0.14) !important;
+  font-weight: 700;
+}
+
+.bulk-tier-table tbody tr.tier-row.is-active td:first-child {
+  color: var(--accent);
+}
+
+.tier-table-price {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.tier-tag-pill {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.tier-tag-bulk {
+  background: rgba(45, 106, 79, 0.15);
+  color: var(--accent);
+}
+
+.tier-tag-base {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-muted);
+}
+
+/* --- CARD LIVE CALCULATION --- */
+.card-live-calc {
+  padding: 0.65rem 0.85rem;
+  background: #ffffff;
+  border-top: 1px dashed rgba(45, 106, 79, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.card-calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.card-calc-total {
+  font-size: 1.18rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.card-calc-savings {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.card-calc-upsell {
+  font-size: 0.78rem;
+  color: #854d0e;
+  background: #fef9c3;
+  padding: 0.3rem 0.55rem;
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+/* --- PRODUCT BUY SECTION --- */
+.product-buy {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(45, 106, 79, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.product-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.product-price {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.product-price .currency {
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+
+.product-price .per {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.product-stock {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #166534;
+  background: #dcfce7;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+}
+
+.product-buy-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+}
+
+.product-stepper-control {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(45, 106, 79, 0.3);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.btn-stepper-step {
+  width: 38px;
+  height: 44px;
+  border: none;
+  background: #f4f1ea;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.btn-stepper-step:hover {
+  background: #e7e2d6;
+}
+
+.qty-stepper {
+  width: 48px;
+  height: 44px;
+  border: none;
+  border-left: 1px solid rgba(45, 106, 79, 0.15);
+  border-right: 1px solid rgba(45, 106, 79, 0.15);
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface);
+  appearance: textfield;
+  -moz-appearance: textfield;
+  margin: 0;
+  padding: 0;
+}
+
+.qty-stepper::-webkit-inner-spin-button,
+.qty-stepper::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.btn-add-cart {
+  flex: 1;
+  height: 44px;
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.btn-add-cart:hover {
+  background: var(--accent-light);
+}
+
+.btn-add-cart:active {
+  transform: scale(0.98);
+}
+
+/* --- WHATSAPP WHOLESALE QUOTE WIDGET --- */
+.whatsapp-quote-widget {
+  margin-top: 0.75rem;
+  background: #f8faf9;
+  border: 1px solid rgba(45, 106, 79, 0.2);
+  border-radius: 10px;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.whatsapp-quote-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.whatsapp-quote-widget .field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.quote-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.quote-pincode-input,
+.quote-phone-input {
+  width: 100%;
+  height: 38px;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(45, 106, 79, 0.25);
+  border-radius: 6px;
+  font-size: 0.88rem;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.quote-pincode-input:focus,
+.quote-phone-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.15);
+}
+
+.btn-bulk-quote {
+  width: 100%;
+  min-height: 40px;
+  background: #ffffff;
+  color: #1e7046;
+  border: 1.5px solid #25d366;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0.45rem 0.75rem;
+}
+
+.btn-bulk-quote:hover {
+  background: #25d366;
+  color: #ffffff;
+}
+
+.quote-feedback {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+.quote-feedback.success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.quote-feedback.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* --- QUALITY & SPECIFICATION TABLE --- */
 .quality .table-wrap {
   overflow-x: auto;
   border-radius: var(--radius);
@@ -601,32 +986,32 @@ a:hover {
   background: var(--surface);
 }
 
-table {
+.quality table {
   width: 100%;
   border-collapse: collapse;
   min-width: 640px;
   font-size: 0.92rem;
 }
 
-th,
-td {
+.quality th,
+.quality td {
   padding: 0.9rem 1rem;
   text-align: left;
   vertical-align: top;
   border-bottom: 1px solid rgba(45, 106, 79, 0.1);
 }
 
-thead th {
+.quality thead th {
   background: var(--bg-deep);
   color: #f0ebe3;
   font-weight: 600;
 }
 
-tbody tr:nth-child(even) {
+.quality tbody tr:nth-child(even) {
   background: rgba(246, 243, 236, 0.6);
 }
 
-tbody td:first-child {
+.quality tbody td:first-child {
   font-weight: 600;
   color: var(--bg-deep);
   white-space: nowrap;
@@ -2325,35 +2710,56 @@ html, body {
   }
 
   /* Bulk Tier Table & Live Calculator Mobile */
-  .bulk-tier-wrapper {
-    margin: 0.65rem 0;
+  .product-bulk-widget {
+    margin: 0.65rem 0 0.85rem;
     border-radius: 8px;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .bulk-tier-table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto;
   }
 
   .bulk-tier-table {
-    font-size: 0.76rem;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    font-size: 0.76rem !important;
+    table-layout: fixed;
   }
 
   .bulk-tier-table th {
-    padding: 0.4rem 0.45rem;
-    font-size: 0.7rem;
+    padding: 0.45rem 0.35rem !important;
+    font-size: 0.68rem !important;
   }
 
   .bulk-tier-table td {
-    padding: 0.45rem 0.45rem;
+    padding: 0.45rem 0.35rem !important;
+    font-size: 0.74rem !important;
   }
 
   .tier-tag-pill {
-    font-size: 0.64rem;
-    padding: 0.1rem 0.3rem;
+    font-size: 0.62rem !important;
+    padding: 0.1rem 0.3rem !important;
   }
 
   .card-live-calc {
-    padding: 0.55rem 0.75rem;
+    padding: 0.55rem 0.65rem;
   }
 
   .card-calc-total {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+  }
+
+  .card-calc-savings {
+    font-size: 0.75rem;
+  }
+
+  .card-calc-upsell {
+    font-size: 0.74rem;
   }
 
   /* Wholesale Quote Widget Mobile */
@@ -2361,10 +2767,13 @@ html, body {
     margin-top: 0.65rem;
     padding: 0.75rem;
     border-radius: 8px;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
   }
 
   .whatsapp-quote-fields {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     gap: 0.45rem;
   }
 
@@ -2374,15 +2783,18 @@ html, body {
     font-size: 16px !important;
     padding: 0.5rem 0.75rem;
     border-radius: 6px;
+    width: 100% !important;
+    box-sizing: border-box;
   }
 
   .btn-bulk-quote,
   .btn-whatsapp-quote {
     height: 46px;
     min-height: 46px;
-    font-size: 0.88rem;
+    font-size: 0.86rem;
     border-radius: 8px;
     padding: 0.55rem 0.75rem;
+    width: 100% !important;
   }
 
   /* Booking & Checkout Section */
