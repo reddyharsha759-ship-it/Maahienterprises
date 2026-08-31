@@ -720,10 +720,13 @@
     // Billed To
     html += '    <div class="meta-card">';
     html += '      <h4>Billed &amp; Shipped To</h4>';
+    if (c.company_name || order.company_name) {
+      html += '      <div style="font-size:14px; font-weight:800; color:#2d6a4f; margin-bottom:2px;">' + escapeHtml(c.company_name || order.company_name) + '</div>';
+    }
     html += '      <div style="font-size:13px; font-weight:700; color:#1c2b24; margin-bottom:2px;">' + escapeHtml(c.name || "Customer") + '</div>';
     if (c.phone) html += '      <div>Phone: ' + escapeHtml(c.phone) + '</div>';
     if (c.email) html += '      <div>Email: ' + escapeHtml(c.email) + '</div>';
-    if (c.gstin) html += '      <div>GSTIN: <strong>' + escapeHtml(c.gstin) + '</strong></div>';
+    if (c.gstin || order.gstin) html += '      <div style="margin-top:3px;">GSTIN: <strong style="font-family:monospace; background:#e8f5e9; color:#166534; padding:1px 5px; border-radius:3px; border:1px solid #bbf7d0;">' + escapeHtml(c.gstin || order.gstin) + '</strong> <span style="font-size:10px; color:#166534; font-weight:700;">(B2B Verified)</span></div>';
     if (c.address) {
       html += '      <div style="margin-top:4px; color:#444; line-height:1.35;">' + escapeHtml(c.address).replace(/\n/g, "<br>") + '</div>';
     }
@@ -1326,7 +1329,18 @@
     // Customer Profile Info
     html += '<section class="detail-section">';
     html += '  <h3 class="detail-section-title">Customer Profile</h3>';
-    html += '  <div class="detail-row"><span class="detail-label">Name</span><span class="detail-val">' + escapeHtml(c.name || "—") + '</span></div>';
+    if (c.is_b2b || c.gstin || order.is_b2b || order.gstin) {
+      html += '  <div style="margin-bottom:0.6rem; background:rgba(45,106,79,0.12); border:1px solid rgba(45,106,79,0.3); border-radius:6px; padding:0.4rem 0.65rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.3rem;">';
+      html += '    <span style="font-size:0.75rem; font-weight:800; color:var(--accent);">🏢 B2B TAX ORDER</span>';
+      if (c.gstin || order.gstin) {
+        html += '    <span style="font-size:0.75rem; font-family:monospace; font-weight:700; color:var(--gold);">GSTIN: ' + escapeHtml(c.gstin || order.gstin) + '</span>';
+      }
+      html += '  </div>';
+    }
+    if (c.company_name || order.company_name) {
+      html += '  <div class="detail-row"><span class="detail-label">Company Name</span><span class="detail-val" style="font-weight:800; color:var(--accent);">' + escapeHtml(c.company_name || order.company_name) + '</span></div>';
+    }
+    html += '  <div class="detail-row"><span class="detail-label">Contact Person</span><span class="detail-val">' + escapeHtml(c.name || "—") + '</span></div>';
     html += '  <div class="detail-row"><span class="detail-label">Email</span><span class="detail-val">' + escapeHtml(c.email || "—") + '</span></div>';
     if (c.phone) {
       html += '  <div class="detail-row"><span class="detail-label">Phone Number</span><span class="detail-val">' + escapeHtml(c.phone) + '</span></div>';

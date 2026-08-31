@@ -1367,6 +1367,16 @@
 
 
 
+  var b2bCheck = document.getElementById("order-is-b2b");
+  var b2bContainer = document.getElementById("b2b-fields");
+  if (b2bCheck && b2bContainer) {
+    b2bCheck.addEventListener("change", function () {
+      b2bContainer.style.display = b2bCheck.checked ? "grid" : "none";
+      var compInp = document.getElementById("order-company");
+      if (b2bCheck.checked && compInp) compInp.focus();
+    });
+  }
+
   if (form) {
     form.querySelectorAll("input, select, textarea").forEach(function (el) {
       el.addEventListener("input", hideError);
@@ -1425,6 +1435,30 @@
         return;
       }
 
+      var b2bCheck = document.getElementById("order-is-b2b");
+      var isB2B = b2bCheck ? b2bCheck.checked : false;
+      var companyName = "";
+      var gstin = "";
+
+      if (isB2B) {
+        var compEl = document.getElementById("order-company");
+        var gstinEl = document.getElementById("order-gstin");
+        companyName = compEl ? compEl.value.trim() : "";
+        gstin = gstinEl ? gstinEl.value.trim().toUpperCase() : "";
+
+        if (!companyName) {
+          showError("Enter your registered company or business name for the B2B tax invoice.");
+          if (compEl) compEl.focus();
+          return;
+        }
+
+        var gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+        if (!gstin || !gstinRegex.test(gstin)) {
+          showError("Enter a valid 15-digit GSTIN (e.g. 33AAAAA0000A1Z5) to claim Input Tax Credit.");
+          if (gstinEl) gstinEl.focus();
+          return;
+        }
+      }
 
       if (placeOrderBtn) {
         placeOrderBtn.disabled = true;
@@ -1461,6 +1495,9 @@
         status: "placed",
         lines: lines,
         total_savings: cartCalc.totalSavings,
+        is_b2b: isB2B,
+        company_name: companyName || null,
+        gstin: gstin || null,
         customer: {
           name: String(fd.get("name") || ""),
           email: String(fd.get("email") || ""),
@@ -1470,7 +1507,10 @@
           region: String(fd.get("region") || ""),
           address: String(fd.get("address") || ""),
           notes: String(fd.get("notes") || ""),
-          payment_method: paymentMethod
+          payment_method: paymentMethod,
+          is_b2b: isB2B,
+          company_name: companyName || null,
+          gstin: gstin || null
         },
         subtotal: subtotal
       };

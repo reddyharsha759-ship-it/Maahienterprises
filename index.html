@@ -431,6 +431,25 @@
                 <textarea id="order-notes" name="notes" rows="4" maxlength="2000" placeholder="Grade, EC, mesh size, packing, incoterms, or other requirements"></textarea>
               </div>
 
+              <!-- B2B GST Tax Invoice Section -->
+              <div class="field field-span checkout-b2b-section">
+                <label class="b2b-toggle-label" for="order-is-b2b">
+                  <input type="checkbox" id="order-is-b2b" name="is_b2b" value="true">
+                  <span>I need a GST Tax Invoice (B2B Order)</span>
+                </label>
+                <div id="b2b-fields" class="b2b-fields-container" style="display: none;">
+                  <div class="field">
+                    <label for="order-company">Registered Company / Business Name <span class="req" aria-hidden="true">*</span></label>
+                    <input id="order-company" name="company_name" type="text" maxlength="200" placeholder="e.g. Green Farms Agro Pvt Ltd">
+                  </div>
+                  <div class="field">
+                    <label for="order-gstin">GSTIN (15-Digit Tax Number) <span class="req" aria-hidden="true">*</span></label>
+                    <input id="order-gstin" name="gstin" type="text" maxlength="15" placeholder="e.g. 33AAAAA0000A1Z5" style="text-transform: uppercase;">
+                    <small class="b2b-hint">Required to claim Input Tax Credit (ITC) on B2B invoices.</small>
+                  </div>
+                </div>
+              </div>
+
               <!-- Payment Method Section -->
               <div class="field field-span payment-method-field" style="margin-top: 0.5rem; padding: 1.15rem; background: #f8faf8; border: 1px solid rgba(45, 106, 79, 0.2); border-radius: 12px;">
                 <label style="display: block; font-weight: 700; font-size: 0.92rem; margin-bottom: 0.65rem; color: #1c2b24;">
