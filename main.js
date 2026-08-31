@@ -1693,7 +1693,7 @@
           "key": rzpKey,
           "amount": Math.round(subtotal * 100),
           "currency": "INR",
-          "name": "MAAHI PRODUCTS",
+          "name": "MAAHI COCOPEAT AND COIR PRODUCTS",
           "description": "Order " + orderId + " (" + lines.length + " item" + (lines.length > 1 ? "s" : "") + ")",
           "theme": { "color": "#2d6a4f" },
           "prefill": {

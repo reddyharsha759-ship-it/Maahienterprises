@@ -689,7 +689,7 @@
     html += '  <table class="header-table">';
     html += '    <tr>';
     html += '      <td style="vertical-align: top;">';
-    html += '        <div class="brand-name">MAAHI PRODUCTS</div>';
+    html += '        <div class="brand-name">MAAHI COCOPEAT AND COIR PRODUCTS</div>';
     html += '        <div class="brand-tagline">Sustainable Cocopeat &amp; Coir Media</div>';
     html += '        <div style="font-size:11px; color:#555; margin-top:4px;">GSTIN: <strong>33AACFM1234F1Z9</strong> (Registered)</div>';
     html += '      </td>';
@@ -1356,7 +1356,7 @@
       var intlPhone = rawPhone.length === 10 ? ("91" + rawPhone) : rawPhone;
       html += '  <div style="margin-top:0.6rem; display:flex; gap:0.5rem;">';
       html += '    <a href="tel:' + escapeHtml(c.phone) + '" style="flex:1; text-align:center; background:#1b4332; color:#fff; padding:0.45rem 0.65rem; border-radius:6px; font-size:0.78rem; font-weight:700; text-decoration:none;">📞 Call Lead</a>';
-      html += '    <a href="https://wa.me/' + intlPhone + '?text=' + encodeURIComponent('Hi, regarding your bulk quote request for MAAHI PRODUCTS (Ref: ' + order.id + ')...') + '" target="_blank" rel="noopener" style="flex:1; text-align:center; background:#128c7e; color:#fff; padding:0.45rem 0.65rem; border-radius:6px; font-size:0.78rem; font-weight:700; text-decoration:none;">💬 WhatsApp Lead</a>';
+      html += '    <a href="https://wa.me/' + intlPhone + '?text=' + encodeURIComponent('Hi, regarding your bulk quote request for MAAHI COCOPEAT AND COIR PRODUCTS (Ref: ' + order.id + ')...') + '" target="_blank" rel="noopener" style="flex:1; text-align:center; background:#128c7e; color:#fff; padding:0.45rem 0.65rem; border-radius:6px; font-size:0.78rem; font-weight:700; text-decoration:none;">💬 WhatsApp Lead</a>';
       html += '  </div>';
     }
     html += '</section>';
@@ -2278,7 +2278,7 @@
     });
     
     html += '</tbody></table>';
-    html += '<div class="footer">MAAHI PRODUCTS — Owner Console Report &copy; ' + new Date().getFullYear() + '</div>';
+    html += '<div class="footer">MAAHI COCOPEAT AND COIR PRODUCTS — Owner Console Report &copy; ' + new Date().getFullYear() + '</div>';
     html += '<script>window.onload = function() { window.print(); window.close(); };</script>';
     html += '</body></html>';
     
@@ -2350,7 +2350,7 @@
       ];
     });
     
-    printDataAsPDF("MAAHI PRODUCTS — Orders Report", headers, rows);
+    printDataAsPDF("MAAHI COCOPEAT AND COIR PRODUCTS — Orders Report", headers, rows);
   }
 
   function exportInventoryExcel() {
@@ -2410,7 +2410,7 @@
       ];
     });
     
-    printDataAsPDF("MAAHI PRODUCTS — Inventory Report", headers, rows);
+    printDataAsPDF("MAAHI COCOPEAT AND COIR PRODUCTS — Inventory Report", headers, rows);
   }
 
   // --- CLIENT SIDE ROUTING ---
