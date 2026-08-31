@@ -566,8 +566,13 @@
 
     if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
       window.maahiSupabase.fetchOrders().then(function (dbOrders) {
-        if (dbOrders) {
-          localStorage.setItem(ORDERS_KEY, JSON.stringify(dbOrders));
+        if (dbOrders && Array.isArray(dbOrders)) {
+          var deletedRaw = localStorage.getItem("maahi_deleted_order_ids_v1");
+          var deletedMap = deletedRaw ? JSON.parse(deletedRaw) : {};
+          var active = dbOrders.filter(function (o) {
+            return o && o.id && !deletedMap[o.id];
+          });
+          localStorage.setItem(ORDERS_KEY, JSON.stringify(active));
           renderProfile();
         }
       }).catch(function (err) {

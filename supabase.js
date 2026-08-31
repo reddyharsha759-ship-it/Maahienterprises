@@ -431,13 +431,24 @@
           return;
         }
 
+        // Clean up child table records first if cascade is absent in Supabase
         client
-          .from("orders")
+          .from("order_notifications")
           .delete()
-          .eq("id", orderId)
+          .eq("order_id", orderId)
+          .then(function () {
+            return client.from("orders").delete().eq("id", orderId);
+          })
+          .catch(function () {
+            return client.from("orders").delete().eq("id", orderId);
+          })
           .then(function (res) {
-            if (res.error) reject(res.error);
-            else resolve(true);
+            if (res && res.error) {
+              console.warn("Supabase deleteOrder error response:", res.error);
+              reject(res.error);
+            } else {
+              resolve(true);
+            }
           })
           .catch(reject);
       });

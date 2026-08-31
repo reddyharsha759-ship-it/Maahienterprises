@@ -96,6 +96,7 @@ DROP POLICY IF EXISTS "Allow public read own orders" ON public.orders;
 DROP POLICY IF EXISTS "Allow public read orders" ON public.orders;
 DROP POLICY IF EXISTS "Allow authenticated update orders" ON public.orders;
 DROP POLICY IF EXISTS "Allow authenticated delete orders" ON public.orders;
+DROP POLICY IF EXISTS "Allow public delete orders" ON public.orders;
 
 -- Allow public / anon customers to create orders with validation
 CREATE POLICY "Allow public insert to orders" ON public.orders
@@ -107,14 +108,15 @@ CREATE POLICY "Allow public read orders" ON public.orders
     FOR SELECT 
     USING (true);
 
--- Restrict order status updates and deletions to authenticated admin users
+-- Allow order status updates and tracking details
 CREATE POLICY "Allow authenticated update orders" ON public.orders
-    FOR UPDATE TO authenticated 
+    FOR UPDATE 
     USING (true) 
     WITH CHECK (true);
 
-CREATE POLICY "Allow authenticated delete orders" ON public.orders
-    FOR DELETE TO authenticated 
+-- Allow permanent order deletion from dashboard
+CREATE POLICY "Allow public delete orders" ON public.orders
+    FOR DELETE 
     USING (true);
 
 

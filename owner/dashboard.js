@@ -3,6 +3,29 @@
   var AUTH_KEY = "maahi_owner_auth_token";
   var CATALOG_KEY = "glc_catalog_v1";
   var PROFILE_KEY = "maahi_user_profile";
+  var DELETED_ORDERS_KEY = "maahi_deleted_order_ids_v1";
+
+  function getDeletedOrderIds() {
+    try {
+      var raw = localStorage.getItem(DELETED_ORDERS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveDeletedOrderIds(map) {
+    try {
+      localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify(map || {}));
+    } catch (e) {}
+  }
+
+  function markOrderAsDeleted(orderId) {
+    if (!orderId) return;
+    var map = getDeletedOrderIds();
+    map[orderId] = true;
+    saveDeletedOrderIds(map);
+  }
 
   // Load User Profile
   function loadUserProfile() {
@@ -105,19 +128,30 @@
   function refreshOrdersData() {
     renderTable();
     renderRecentOrders();
+    renderQuotesTable();
 
     if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
       window.maahiSupabase.fetchOrders().then(function (dbOrders) {
         if (dbOrders && Array.isArray(dbOrders)) {
+          var deletedMap = getDeletedOrderIds();
           var localOrders = loadOrders();
           var mergedMap = {};
           
           localOrders.forEach(function (o) {
-            if (o && o.id) mergedMap[o.id] = o;
+            if (o && o.id && !deletedMap[o.id]) {
+              mergedMap[o.id] = o;
+            }
           });
           
           dbOrders.forEach(function (o) {
-            if (o && o.id) mergedMap[o.id] = o;
+            if (o && o.id) {
+              if (deletedMap[o.id]) {
+                // If it was previously marked as deleted, ensure it is purged in Supabase
+                window.maahiSupabase.deleteOrder(o.id).catch(function () {});
+              } else {
+                mergedMap[o.id] = o;
+              }
+            }
           });
           
           var mergedList = Object.values(mergedMap).sort(function (a, b) {
@@ -127,6 +161,7 @@
           saveOrders(mergedList);
           renderTable();
           renderRecentOrders();
+          renderQuotesTable();
         }
       }).catch(function (err) {
         console.warn("Supabase fetch orders failed:", err);
@@ -242,16 +277,28 @@
   // 4. Data Layer Functions
   function loadOrders() {
     try {
+      var deletedMap = getDeletedOrderIds();
       var raw = localStorage.getItem(ORDERS_KEY);
       var data = raw ? JSON.parse(raw) : [];
-      return Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) data = [];
+      var active = data.filter(function (o) {
+        return o && o.id && !deletedMap[o.id];
+      });
+      if (active.length !== data.length) {
+        localStorage.setItem(ORDERS_KEY, JSON.stringify(active));
+      }
+      return active;
     } catch (e) {
       return [];
     }
   }
 
   function saveOrders(orders) {
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+    var deletedMap = getDeletedOrderIds();
+    var clean = (orders || []).filter(function (o) {
+      return o && o.id && !deletedMap[o.id];
+    });
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(clean));
   }
 
   function formatMoney(n) {
@@ -1783,15 +1830,20 @@
       return;
     }
 
+    // 1. Record in persistent tombstone map
+    markOrderAsDeleted(orderId);
+
+    // 2. Remove immediately from LocalStorage
     var orders = loadOrders();
     var filtered = orders.filter(function (o) {
       return o && o.id !== orderId;
     });
     saveOrders(filtered);
 
+    // 3. Delete from Supabase if connected
     if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
       window.maahiSupabase.deleteOrder(orderId).then(function () {
-        console.log("Order deleted from Supabase:", orderId);
+        console.log("Order permanently deleted from Supabase:", orderId);
       }).catch(function (err) {
         console.warn("Failed to delete order from Supabase:", err);
       });
@@ -1801,6 +1853,7 @@
     renderStats(filtered);
     renderTable();
     renderQuotesTable();
+    renderRecentOrders();
   }
 
   // --- QUOTE INQUIRIES CONTROLLER ---
