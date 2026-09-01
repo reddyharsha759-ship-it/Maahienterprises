@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /owner/
+Disallow: /supabase/
+
+Sitemap: https://www.maahienterprises.in/sitemap.xml
