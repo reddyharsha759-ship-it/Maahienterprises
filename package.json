@@ -6,10 +6,15 @@
   "scripts": {
     "test": "echo \"No tests specified\""
   },
-  "keywords": ["organic", "cocopeat", "agriculture"],
+  "keywords": [
+    "organic",
+    "cocopeat",
+    "agriculture"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^1.0.0"
   }
 }
