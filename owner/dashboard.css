@@ -1684,3 +1684,63 @@ html, body {
     padding-bottom: 5.5rem !important;
   }
 }
+
+/* Bulk Orders Custom Styling */
+.bulk-b2b-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(201, 162, 39, 0.12);
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  margin-top: 3px;
+}
+
+.bulk-qty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(45, 106, 79, 0.15);
+  color: #d8f3dc;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(82, 183, 136, 0.25);
+}
+
+.status-pill.status-partial {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.status-pill.status-credit {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.btn-edit-bulk {
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--gold);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  padding: 0.35rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-edit-bulk:hover {
+  background: var(--gold);
+  color: #1a1500;
+}
+

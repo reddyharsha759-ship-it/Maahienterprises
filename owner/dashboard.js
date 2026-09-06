@@ -129,6 +129,7 @@
     renderTable();
     renderRecentOrders();
     renderQuotesTable();
+    renderBulkOrdersTable();
 
     if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
       window.maahiSupabase.fetchOrders().then(function (dbOrders) {
@@ -162,6 +163,7 @@
           renderTable();
           renderRecentOrders();
           renderQuotesTable();
+          renderBulkOrdersTable();
         }
       }).catch(function (err) {
         console.warn("Supabase fetch orders failed:", err);
@@ -273,6 +275,21 @@
   var btnCancelInvoice = document.getElementById("btn-cancel-invoice");
   var invItemsTbody = document.getElementById("inv-items-tbody");
   var invoiceFormError = document.getElementById("invoice-form-error");
+ 
+  // Bulk Order Drawer Elements
+  var bulkOrderDrawer = document.getElementById("bulk-order-drawer");
+  var bulkOrderClose = document.getElementById("bulk-order-close");
+  var bulkOrderForm = document.getElementById("bulk-order-form");
+  var btnCreateBulkOrder = document.getElementById("btn-create-bulk-order");
+  var btnCreateFirstBulkOrder = document.getElementById("btn-create-first-bulk-order");
+  var btnBulkAddRow = document.getElementById("btn-bulk-add-row");
+  var btnCancelBulkOrder = document.getElementById("btn-cancel-bulk-order");
+  var bulkItemsTbody = document.getElementById("bulk-items-tbody");
+  var bulkFormError = document.getElementById("bulk-form-error");
+  var bulkOrdersSearch = document.getElementById("bulk-orders-search");
+  var bulkOrdersStatusFilter = document.getElementById("bulk-orders-status-filter");
+  var btnRefreshBulkOrders = document.getElementById("btn-refresh-bulk-orders");
+  var btnExportBulkOrdersExcel = document.getElementById("btn-export-bulk-orders-excel");
 
   // 4. Data Layer Functions
   function loadOrders() {
@@ -1500,10 +1517,19 @@
 
     var editInvoiceBtn = drawerBody.querySelector("#btn-edit-drawer-invoice");
     if (editInvoiceBtn) {
-      editInvoiceBtn.addEventListener("click", function () {
-        closeDetail();
-        openInvoiceDrawer(order);
-      });
+      var isBulk = (order.id && (order.id.startsWith("BLK-") || order.id.startsWith("BULK-"))) || (order.customer && order.customer.is_bulk);
+      if (isBulk) {
+        editInvoiceBtn.textContent = "✏️ Edit Bulk Order";
+        editInvoiceBtn.addEventListener("click", function () {
+          closeDetail();
+          openBulkOrderDrawer(order);
+        });
+      } else {
+        editInvoiceBtn.addEventListener("click", function () {
+          closeDetail();
+          openInvoiceDrawer(order);
+        });
+      }
     }
 
     // Attach local selector action change
@@ -1727,6 +1753,7 @@
 
     renderRecentOrders();
     renderQuotesTable();
+    renderBulkOrdersTable();
   }
 
   function renderRecentOrders() {
@@ -2093,6 +2120,821 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  // --- BULK ORDERS MANAGEMENT ---
+
+  function getBulkOrders() {
+    var allOrders = loadOrders();
+    return allOrders.filter(function (o) {
+      if (!o) return false;
+      var c = o.customer || {};
+      if (o.id && (o.id.startsWith("BLK-") || o.id.startsWith("BULK-"))) return true;
+      if (c.is_bulk || c.order_type === "bulk" || c.fulfillment === "export") return true;
+
+      var totalQty = (o.lines || []).reduce(function (sum, l) {
+        return sum + (Number(l.qty || l.quantity) || 0);
+      }, 0);
+      if (totalQty >= 50) return true;
+      if (Number(o.subtotal) >= 25000) return true;
+
+      return false;
+    });
+  }
+
+  function getFilteredBulkOrders() {
+    var bulkOrders = getBulkOrders();
+    var qInp = document.getElementById("bulk-orders-search");
+    var stFilter = document.getElementById("bulk-orders-status-filter");
+    var q = (qInp && qInp.value.trim().toLowerCase()) || "";
+    var st = (stFilter && stFilter.value.trim().toLowerCase()) || "";
+
+    return bulkOrders.filter(function (o) {
+      if (!o) return false;
+      var orderStatus = (o.status || "new").toLowerCase();
+      if (st && orderStatus !== st) return false;
+      if (!q) return true;
+
+      var c = o.customer || {};
+      var prodTitles = (o.lines || []).map(function (l) { return (l.title || l.name || "") + " " + (l.unitLabel || ""); }).join(" ");
+      var blob = (o.id || "") + " " +
+                 (c.name || "") + " " +
+                 (c.contact_person || "") + " " +
+                 (c.phone || "") + " " +
+                 (c.email || "") + " " +
+                 (c.gstin || "") + " " +
+                 (c.pincode || "") + " " +
+                 (c.address || "") + " " +
+                 (c.carrier || c.delivery_partner || "") + " " +
+                 (c.vehicle_no || "") + " " +
+                 (c.lr_no || c.tracking_id || "") + " " +
+                 (c.notes || "") + " " +
+                 prodTitles;
+      return blob.toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  function renderBulkStats(bulkOrders) {
+    var bulkStatsEl = document.getElementById("bulk-stats");
+    var bulkBadge = document.getElementById("bulk-orders-badge");
+
+    if (bulkBadge) {
+      if (bulkOrders.length > 0) {
+        bulkBadge.style.display = "inline-block";
+        bulkBadge.textContent = bulkOrders.length;
+      } else {
+        bulkBadge.style.display = "none";
+      }
+    }
+
+    if (!bulkStatsEl) return;
+
+    var totalCount = bulkOrders.length;
+    var totalVal = bulkOrders.reduce(function (sum, o) {
+      return sum + (Number(o.subtotal) || 0);
+    }, 0);
+    var totalUnits = bulkOrders.reduce(function (sum, o) {
+      return sum + (o.lines || []).reduce(function (lsum, l) {
+        return lsum + (Number(l.qty || l.quantity) || 0);
+      }, 0);
+    }, 0);
+    var activeDispatches = bulkOrders.filter(function (o) {
+      var s = (o.status || "new").toLowerCase();
+      return s === "confirmed" || s === "processing" || s === "shipped";
+    }).length;
+
+    var html = "";
+    html += '<article class="metric-card">';
+    html += '  <div class="card-info">';
+    html += '    <p class="label">Bulk Orders</p>';
+    html += '    <p class="value">' + totalCount + '</p>';
+    html += '    <span class="trend-badge up">Commercial B2B</span>';
+    html += '  </div>';
+    html += '  <div class="card-icon-bg" aria-hidden="true">📦</div>';
+    html += '</article>';
+
+    html += '<article class="metric-card">';
+    html += '  <div class="card-info">';
+    html += '    <p class="label">Total Bulk Value</p>';
+    html += '    <p class="value">' + formatMoney(totalVal) + '</p>';
+    html += '    <span class="trend-badge">High Volume</span>';
+    html += '  </div>';
+    html += '  <div class="card-icon-bg" aria-hidden="true">₹</div>';
+    html += '</article>';
+
+    html += '<article class="metric-card">';
+    html += '  <div class="card-info">';
+    html += '    <p class="label">Units / Volume</p>';
+    html += '    <p class="value">' + Number(totalUnits).toLocaleString("en-IN") + '</p>';
+    html += '    <span class="trend-badge up">Blocks &amp; Bags</span>';
+    html += '  </div>';
+    html += '  <div class="card-icon-bg" aria-hidden="true">🧱</div>';
+    html += '</article>';
+
+    html += '<article class="metric-card">';
+    html += '  <div class="card-info">';
+    html += '    <p class="label">Active In-Transit / Dispatch</p>';
+    html += '    <p class="value">' + activeDispatches + '</p>';
+    html += '    <span class="trend-badge">Logistics</span>';
+    html += '  </div>';
+    html += '  <div class="card-icon-bg" aria-hidden="true">🚛</div>';
+    html += '</article>';
+
+    bulkStatsEl.innerHTML = html;
+  }
+
+  function renderBulkOrdersTable() {
+    var bulkOrders = getFilteredBulkOrders();
+    var allBulk = getBulkOrders();
+    renderBulkStats(allBulk);
+
+    var bTbody = document.getElementById("bulk-orders-tbody");
+    var bEmpty = document.getElementById("bulk-orders-empty");
+    var bTable = document.getElementById("bulk-orders-table");
+
+    if (!bTbody) return;
+    bTbody.innerHTML = "";
+
+    if (!bulkOrders.length) {
+      if (bEmpty) bEmpty.removeAttribute("hidden");
+      if (bTable) bTable.hidden = true;
+      return;
+    }
+
+    if (bEmpty) bEmpty.setAttribute("hidden", "true");
+    if (bTable) bTable.hidden = false;
+
+    bulkOrders.forEach(function (o) {
+      var tr = document.createElement("tr");
+      var c = o.customer || {};
+      var dt = formatDate(o.createdAt);
+      var targetDt = c.target_date || "—";
+      var st = o.status || "new";
+      var paySt = c.payment_status || (c.razorpay_payment_id ? "paid" : "pending");
+      var rawPhone = (c.phone || "").replace(/\D/g, "");
+      var intlPhone = rawPhone.length === 10 ? ("91" + rawPhone) : rawPhone;
+
+      // Format Items summary
+      var lines = o.lines || [];
+      var itemsHtml = "";
+      if (lines.length > 0) {
+        var first = lines[0];
+        var itemQty = Number(first.qty || first.quantity) || 1;
+        var unitLbl = first.unitLabel || "units";
+        itemsHtml = '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' +
+                    '<span class="bulk-qty-badge">' + itemQty.toLocaleString("en-IN") + ' ' + escapeHtml(unitLbl) + '</span> ' +
+                    '<strong>' + escapeHtml(first.title || first.name || "Bulk Product") + '</strong>' +
+                    '</div>';
+        if (lines.length > 1) {
+          itemsHtml += '<span style="display:block; font-size:0.73rem; color:var(--text-muted); margin-top:2px;">+ ' + (lines.length - 1) + ' more item(s)</span>';
+        }
+      } else {
+        itemsHtml = '<em>No items listed</em>';
+      }
+
+      // Format Buyer info
+      var companyName = c.name || "Client / Company";
+      var contactPerson = c.contact_person ? '<span style="display:block; font-size:0.75rem; color:var(--text-muted);">Attn: ' + escapeHtml(c.contact_person) + '</span>' : '';
+      var gstinHtml = c.gstin ? '<span style="display:block; font-size:0.72rem; color:var(--accent); font-family:monospace; font-weight:700;">GSTIN: ' + escapeHtml(c.gstin) + '</span>' : '';
+      var phoneHtml = c.phone ? '<span style="display:block; font-size:0.78rem; font-weight:600;"><a href="tel:' + escapeHtml(c.phone) + '" style="color:var(--gold); text-decoration:underline;">' + escapeHtml(c.phone) + '</a></span>' : '';
+      var buyerHtml = '<strong style="font-size:0.92rem; color:var(--text);">' + escapeHtml(companyName) + '</strong>' +
+                      contactPerson + phoneHtml + gstinHtml;
+
+      // Transport badge
+      var transportInfo = "";
+      if (c.vehicle_no || c.carrier || c.delivery_partner || c.lr_no || c.tracking_id) {
+        var carrierName = c.carrier || c.delivery_partner || "Transporter";
+        var veh = c.vehicle_no ? ' • ' + escapeHtml(c.vehicle_no) : '';
+        var lr = (c.lr_no || c.tracking_id) ? ' <code style="font-size:0.7rem;">LR: ' + escapeHtml(c.lr_no || c.tracking_id) + '</code>' : '';
+        transportInfo = '<div style="margin-top:4px; font-size:0.72rem; color:var(--accent); font-weight:600; display:flex; align-items:center; gap:4px; background:rgba(45,106,79,0.08); padding:2px 6px; border-radius:4px; border:1px solid rgba(45,106,79,0.18);">' +
+                        '<span>🚛</span><span>' + escapeHtml(carrierName) + veh + lr + '</span></div>';
+      }
+
+      // Status pill & Payment pill
+      var payClass = paySt === "paid" ? "status-confirmed" : (paySt === "partial" ? "status-partial" : (paySt === "credit" ? "status-credit" : "status-new"));
+      var payLabel = paySt === "paid" ? "✓ Paid" : (paySt === "partial" ? "Partial / Adv" : (paySt === "credit" ? "Credit" : "Pending Pay"));
+      var statusHtml = '<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">' +
+                       '<span class="' + statusClass(st) + '">' + escapeHtml(st) + '</span>' +
+                       '<span class="status-pill ' + payClass + '" style="font-size:0.68rem; padding:1px 6px;">' + escapeHtml(payLabel) + '</span>' +
+                       transportInfo +
+                       '</div>';
+
+      // Amount & Discount
+      var discountBadge = c.discount > 0 ? '<span style="display:block; font-size:0.72rem; color:#166534; font-weight:700;">- ' + formatMoney(c.discount) + ' bulk off</span>' : '';
+      var amountHtml = '<span class="amount-text" style="font-size:1.05rem; font-weight:700; color:var(--gold);">' + formatMoney(o.subtotal) + '</span>' + discountBadge;
+
+      tr.innerHTML =
+        '<td><span class="mono" style="font-weight:700; color:var(--gold); font-size:0.88rem;">' + escapeHtml(o.id) + '</span><br><span class="bulk-b2b-badge">BULK B2B</span></td>' +
+        '<td><strong>' + escapeHtml(dt) + '</strong><span style="display:block; font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Target: ' + escapeHtml(targetDt) + '</span></td>' +
+        '<td class="customer-cell">' + buyerHtml + '</td>' +
+        '<td>' + itemsHtml + '</td>' +
+        '<td>' + amountHtml + '</td>' +
+        '<td>' + statusHtml + '</td>' +
+        '<td style="text-align: right;"></td>';
+
+      var actionCell = tr.querySelector("td:last-child");
+      actionCell.style.display = "flex";
+      actionCell.style.gap = "0.35rem";
+      actionCell.style.justifyContent = "flex-end";
+      actionCell.style.flexWrap = "nowrap";
+
+      // Edit Button
+      var editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "btn-edit-bulk";
+      editBtn.innerHTML = "✏️ Edit";
+      editBtn.title = "Edit Bulk Order Details, Items & Pricing";
+      editBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        openBulkOrderDrawer(o);
+      });
+      actionCell.appendChild(editBtn);
+
+      // Tax Invoice Print Button
+      var invBtn = document.createElement("button");
+      invBtn.type = "button";
+      invBtn.className = "btn-invoice-print";
+      invBtn.innerHTML = "🧾";
+      invBtn.title = "Print / Export Commercial Tax Invoice";
+      invBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        printInvoice(o);
+      });
+      actionCell.appendChild(invBtn);
+
+      // WhatsApp Button
+      if (rawPhone) {
+        var waLink = document.createElement("a");
+        waLink.href = "https://wa.me/" + intlPhone + "?text=" + encodeURIComponent("Hi " + (c.contact_person || c.name || "Sir") + ", regarding your Bulk Order (" + o.id + ") from MAAHI COCOPEAT AND COIR PRODUCTS...");
+        waLink.target = "_blank";
+        waLink.rel = "noopener";
+        waLink.className = "btn-small";
+        waLink.title = "Message Client on WhatsApp";
+        waLink.style.background = "#128c7e";
+        waLink.style.color = "#fff";
+        waLink.style.padding = "0.35rem 0.6rem";
+        waLink.style.textDecoration = "none";
+        waLink.innerHTML = "💬";
+        actionCell.appendChild(waLink);
+      }
+
+      // Details View Button
+      var viewBtn = document.createElement("button");
+      viewBtn.type = "button";
+      viewBtn.className = "btn-small";
+      viewBtn.textContent = "View";
+      viewBtn.title = "View Order Details";
+      viewBtn.addEventListener("click", function () {
+        openDetail(o);
+      });
+      actionCell.appendChild(viewBtn);
+
+      // Delete Button
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "btn-delete-order";
+      delBtn.innerHTML = "🗑️";
+      delBtn.title = "Delete Bulk Order";
+      delBtn.style.background = "rgba(239, 68, 68, 0.1)";
+      delBtn.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+      delBtn.style.color = "#ef4444";
+      delBtn.style.borderRadius = "6px";
+      delBtn.style.padding = "0.35rem 0.55rem";
+      delBtn.style.cursor = "pointer";
+      delBtn.style.fontSize = "0.82rem";
+      delBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        deleteOrder(o.id);
+      });
+      actionCell.appendChild(delBtn);
+
+      bTbody.appendChild(tr);
+    });
+  }
+
+  function exportBulkOrdersExcel() {
+    var bulkOrders = getBulkOrders();
+    if (!bulkOrders.length) {
+      alert("No bulk orders available to export.");
+      return;
+    }
+    var headers = [
+      "Bulk Order ID", "Date", "Target Delivery", "Company Name", "Contact Person",
+      "Phone", "Email", "GSTIN", "Pincode", "Address", "Items Summary",
+      "Total Units", "Subtotal (INR)", "Discount (INR)", "GST Rate", "Freight (INR)",
+      "Grand Total (INR)", "Status", "Payment Status", "Payment Mode", "Carrier",
+      "Vehicle No", "LR Number", "Notes"
+    ];
+    var rows = bulkOrders.map(function (o) {
+      var c = o.customer || {};
+      var lines = o.lines || [];
+      var itemsSummary = lines.map(function (l) {
+        return (l.qty || 1) + "x " + (l.title || "") + " (" + (l.unitLabel || "unit") + ")";
+      }).join("; ");
+      var totalUnits = lines.reduce(function (sum, l) { return sum + (Number(l.qty || l.quantity) || 0); }, 0);
+
+      return [
+        o.id,
+        o.createdAt ? o.createdAt.slice(0, 10) : "",
+        c.target_date || "",
+        c.name || "",
+        c.contact_person || "",
+        c.phone || "",
+        c.email || "",
+        c.gstin || "",
+        c.pincode || "",
+        c.address || "",
+        itemsSummary,
+        totalUnits,
+        o.subtotal || 0,
+        c.discount || 0,
+        (c.tax_rate || 0) + "%",
+        c.freight || c.shipping || 0,
+        o.subtotal || 0,
+        o.status || "new",
+        c.payment_status || "pending",
+        c.payment_method || "bank_transfer",
+        c.carrier || c.delivery_partner || "",
+        c.vehicle_no || "",
+        c.lr_no || c.tracking_id || "",
+        c.notes || ""
+      ];
+    });
+
+    var csvContent = [headers.join(",")].concat(rows.map(function (r) {
+      return r.map(function (val) {
+        return '"' + String(val).replace(/"/g, '""') + '"';
+      }).join(",");
+    })).join("\r\n");
+
+    var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "maahi_bulk_orders_" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function addBulkOrderItemRow(item) {
+    var bulkTbody = document.getElementById("bulk-items-tbody");
+    if (!bulkTbody) return;
+    item = item || {};
+    var catalog = loadCatalog();
+    var catKeys = Object.keys(catalog);
+
+    var tr = document.createElement("tr");
+
+    // Product Title / Grade
+    var tdTitle = document.createElement("td");
+    var selectTitle = document.createElement("select");
+    selectTitle.className = "bulk-item-select";
+    selectTitle.style.marginBottom = "4px";
+
+    var defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = "— Select Catalog Product —";
+    selectTitle.appendChild(defaultOpt);
+
+    catKeys.forEach(function (k) {
+      var prod = catalog[k];
+      var opt = document.createElement("option");
+      opt.value = k;
+      opt.textContent = (prod.title || k) + " (₹" + (prod.price || 0) + ")";
+      if (item.id === k || (item.title && prod.title && item.title.toLowerCase() === prod.title.toLowerCase())) {
+        opt.selected = true;
+      }
+      selectTitle.appendChild(opt);
+    });
+
+    var customOpt = document.createElement("option");
+    customOpt.value = "custom";
+    customOpt.textContent = "Custom Bulk Product / Specification";
+    selectTitle.appendChild(customOpt);
+
+    var titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.className = "bulk-item-title";
+    titleInput.placeholder = "e.g. 5kg Block (Low EC, Washed)";
+    titleInput.value = item.title || "";
+    titleInput.required = true;
+
+    tdTitle.appendChild(selectTitle);
+    tdTitle.appendChild(titleInput);
+
+    // Unit Label
+    var tdUnit = document.createElement("td");
+    var unitSelect = document.createElement("select");
+    unitSelect.className = "bulk-item-unit";
+    ["Blocks", "Pallets", "Metric Tonnes", "Growbags", "Bags", "Bales", "Boxes"].forEach(function (u) {
+      var uOpt = document.createElement("option");
+      uOpt.value = u;
+      uOpt.textContent = u;
+      if (item.unitLabel && item.unitLabel.toLowerCase() === u.toLowerCase()) {
+        uOpt.selected = true;
+      }
+      unitSelect.appendChild(uOpt);
+    });
+    tdUnit.appendChild(unitSelect);
+
+    // Unit Price (₹)
+    var tdPrice = document.createElement("td");
+    var priceInput = document.createElement("input");
+    priceInput.type = "number";
+    priceInput.className = "bulk-item-price";
+    priceInput.min = "0";
+    priceInput.value = item.unitPrice != null ? item.unitPrice : (item.price != null ? item.price : 0);
+    priceInput.style.textAlign = "right";
+    tdPrice.appendChild(priceInput);
+
+    // Quantity
+    var tdQty = document.createElement("td");
+    var qtyInput = document.createElement("input");
+    qtyInput.type = "number";
+    qtyInput.className = "bulk-item-qty";
+    qtyInput.min = "1";
+    qtyInput.value = item.qty || item.quantity || 100;
+    qtyInput.style.textAlign = "center";
+    tdQty.appendChild(qtyInput);
+
+    // Total
+    var tdTotal = document.createElement("td");
+    tdTotal.className = "bulk-item-total";
+    tdTotal.style.textAlign = "right";
+    tdTotal.style.fontWeight = "700";
+    tdTotal.style.color = "var(--gold)";
+    tdTotal.textContent = "₹0";
+
+    // Remove
+    var tdRemove = document.createElement("td");
+    tdRemove.style.textAlign = "center";
+    var removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn-remove-row";
+    removeBtn.innerHTML = "×";
+    removeBtn.title = "Remove Item Row";
+    removeBtn.addEventListener("click", function () {
+      tr.remove();
+      calcBulkOrderTotals();
+    });
+    tdRemove.appendChild(removeBtn);
+
+    tr.appendChild(tdTitle);
+    tr.appendChild(tdUnit);
+    tr.appendChild(tdPrice);
+    tr.appendChild(tdQty);
+    tr.appendChild(tdTotal);
+    tr.appendChild(tdRemove);
+
+    function updateRowTotal() {
+      var p = Number(priceInput.value) || 0;
+      var q = Number(qtyInput.value) || 0;
+      tdTotal.textContent = formatMoney(p * q);
+      calcBulkOrderTotals();
+    }
+
+    selectTitle.addEventListener("change", function () {
+      var val = selectTitle.value;
+      if (val && catalog[val]) {
+        titleInput.value = catalog[val].title || val;
+        priceInput.value = catalog[val].price || 0;
+        if (catalog[val].unitLabel) {
+          unitSelect.value = catalog[val].unitLabel;
+        }
+      }
+      updateRowTotal();
+    });
+
+    priceInput.addEventListener("input", updateRowTotal);
+    qtyInput.addEventListener("input", updateRowTotal);
+
+    bulkTbody.appendChild(tr);
+    updateRowTotal();
+  }
+
+  function calcBulkOrderTotals() {
+    var bulkTbody = document.getElementById("bulk-items-tbody");
+    if (!bulkTbody) return;
+
+    var rows = bulkTbody.querySelectorAll("tr");
+    var grossSubtotal = 0;
+
+    rows.forEach(function (tr) {
+      var priceInput = tr.querySelector(".bulk-item-price");
+      var qtyInput = tr.querySelector(".bulk-item-qty");
+      if (priceInput && qtyInput) {
+        var p = Number(priceInput.value) || 0;
+        var q = Number(qtyInput.value) || 0;
+        grossSubtotal += (p * q);
+      }
+    });
+
+    var discount = Number(document.getElementById("bulk-discount").value) || 0;
+    var freight = Number(document.getElementById("bulk-freight").value) || 0;
+    var taxRate = Number(document.getElementById("bulk-tax-rate").value) || 0;
+
+    var taxable = Math.max(0, grossSubtotal - discount);
+    var taxAmount = Math.round((taxable * taxRate) / 100);
+    var grandTotal = taxable + taxAmount + freight;
+
+    var subtotalEl = document.getElementById("bulk-calc-subtotal");
+    var discountEl = document.getElementById("bulk-calc-discount");
+    var taxEl = document.getElementById("bulk-calc-tax");
+    var freightEl = document.getElementById("bulk-calc-freight");
+    var grandTotalEl = document.getElementById("bulk-calc-grand-total");
+
+    var rowDiscount = document.getElementById("bulk-row-discount");
+    var rowTax = document.getElementById("bulk-row-tax");
+    var rowFreight = document.getElementById("bulk-row-freight");
+
+    if (subtotalEl) subtotalEl.textContent = formatMoney(grossSubtotal);
+    if (discountEl) discountEl.textContent = "-" + formatMoney(discount);
+    if (taxEl) taxEl.textContent = formatMoney(taxAmount) + " (" + taxRate + "%)";
+    if (freightEl) freightEl.textContent = formatMoney(freight);
+    if (grandTotalEl) grandTotalEl.textContent = formatMoney(grandTotal);
+
+    if (rowDiscount) rowDiscount.style.display = discount > 0 ? "flex" : "none";
+    if (rowTax) rowTax.style.display = taxRate > 0 ? "flex" : "none";
+    if (rowFreight) rowFreight.style.display = freight > 0 ? "flex" : "none";
+  }
+
+  function openBulkOrderDrawer(orderToEdit) {
+    var drawer = document.getElementById("bulk-order-drawer");
+    var overlay = document.getElementById("drawer-overlay");
+    var titleEl = document.getElementById("bulk-drawer-title");
+    var badgeEl = document.getElementById("bulk-badge-status");
+    var saveBtn = document.getElementById("btn-save-bulk-order");
+    var bulkTbody = document.getElementById("bulk-items-tbody");
+    var errEl = document.getElementById("bulk-form-error");
+
+    if (!drawer || !overlay) return;
+    if (errEl) errEl.hidden = true;
+    if (bulkTbody) bulkTbody.innerHTML = "";
+
+    if (orderToEdit) {
+      if (titleEl) titleEl.textContent = "Edit Bulk Order — " + orderToEdit.id;
+      if (badgeEl) {
+        badgeEl.textContent = (orderToEdit.status || "new").toUpperCase();
+        badgeEl.className = "status-pill status-" + (orderToEdit.status || "new");
+      }
+      if (saveBtn) saveBtn.innerHTML = "💾 Update Bulk Order";
+
+      var c = orderToEdit.customer || {};
+      document.getElementById("bulk-ord-id").value = orderToEdit.id || "";
+      document.getElementById("bulk-ord-id").readOnly = true;
+      document.getElementById("bulk-ord-date").value = orderToEdit.createdAt ? orderToEdit.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10);
+      document.getElementById("bulk-ord-target-date").value = c.target_date || "";
+      document.getElementById("bulk-ord-status").value = orderToEdit.status || "new";
+      document.getElementById("bulk-ord-payment-status").value = c.payment_status || (c.razorpay_payment_id ? "paid" : "pending");
+      document.getElementById("bulk-ord-payment-method").value = c.payment_method || "bank_transfer";
+
+      document.getElementById("bulk-cust-name").value = c.name || "";
+      document.getElementById("bulk-cust-contact").value = c.contact_person || "";
+      document.getElementById("bulk-cust-phone").value = c.phone || "";
+      document.getElementById("bulk-cust-email").value = c.email || "";
+      document.getElementById("bulk-cust-gstin").value = c.gstin || "";
+      document.getElementById("bulk-cust-pincode").value = c.pincode || "";
+      document.getElementById("bulk-cust-address").value = c.address || "";
+
+      document.getElementById("bulk-carrier").value = c.carrier || c.delivery_partner || "";
+      document.getElementById("bulk-vehicle-no").value = c.vehicle_no || "";
+      document.getElementById("bulk-lr-no").value = c.lr_no || c.tracking_id || "";
+      document.getElementById("bulk-warehouse").value = c.warehouse || "";
+
+      document.getElementById("bulk-tax-rate").value = c.tax_rate != null ? c.tax_rate : 0;
+      document.getElementById("bulk-discount").value = c.discount || 0;
+      document.getElementById("bulk-freight").value = c.freight || c.shipping || 0;
+      document.getElementById("bulk-notes").value = c.notes || "";
+
+      var lines = orderToEdit.lines || [];
+      if (lines.length > 0) {
+        lines.forEach(function (l) {
+          addBulkOrderItemRow(l);
+        });
+      } else {
+        addBulkOrderItemRow();
+      }
+    } else {
+      if (titleEl) titleEl.textContent = "Add New Bulk Order";
+      if (badgeEl) {
+        badgeEl.textContent = "NEW";
+        badgeEl.className = "status-pill status-new";
+      }
+      if (saveBtn) saveBtn.innerHTML = "💾 Save Bulk Order";
+
+      var randId = "BLK-" + new Date().getFullYear() + "-" + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById("bulk-ord-id").value = randId;
+      document.getElementById("bulk-ord-id").readOnly = false;
+      document.getElementById("bulk-ord-date").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("bulk-ord-target-date").value = "";
+      document.getElementById("bulk-ord-status").value = "new";
+      document.getElementById("bulk-ord-payment-status").value = "pending";
+      document.getElementById("bulk-ord-payment-method").value = "bank_transfer";
+
+      document.getElementById("bulk-cust-name").value = "";
+      document.getElementById("bulk-cust-contact").value = "";
+      document.getElementById("bulk-cust-phone").value = "";
+      document.getElementById("bulk-cust-email").value = "";
+      document.getElementById("bulk-cust-gstin").value = "";
+      document.getElementById("bulk-cust-pincode").value = "";
+      document.getElementById("bulk-cust-address").value = "";
+
+      document.getElementById("bulk-carrier").value = "";
+      document.getElementById("bulk-vehicle-no").value = "";
+      document.getElementById("bulk-lr-no").value = "";
+      document.getElementById("bulk-warehouse").value = "";
+
+      document.getElementById("bulk-tax-rate").value = 0;
+      document.getElementById("bulk-discount").value = 0;
+      document.getElementById("bulk-freight").value = 0;
+      document.getElementById("bulk-notes").value = "";
+
+      addBulkOrderItemRow();
+    }
+
+    calcBulkOrderTotals();
+
+    drawer.style.display = "flex";
+    setTimeout(function () {
+      drawer.classList.add("is-open");
+      drawer.setAttribute("aria-hidden", "false");
+      overlay.classList.add("is-visible");
+      overlay.setAttribute("aria-hidden", "false");
+    }, 10);
+  }
+
+  function closeBulkOrderDrawer() {
+    var drawer = document.getElementById("bulk-order-drawer");
+    var overlay = document.getElementById("drawer-overlay");
+    var errEl = document.getElementById("bulk-form-error");
+
+    if (drawer) {
+      drawer.classList.remove("is-open");
+      drawer.setAttribute("aria-hidden", "true");
+      setTimeout(function () {
+        drawer.style.display = "none";
+      }, 350);
+    }
+    if (overlay) {
+      overlay.classList.remove("is-visible");
+      overlay.setAttribute("aria-hidden", "true");
+    }
+    if (errEl) errEl.hidden = true;
+  }
+
+  function handleBulkOrderFormSubmit(e) {
+    if (e) e.preventDefault();
+    var errEl = document.getElementById("bulk-form-error");
+    if (errEl) errEl.hidden = true;
+
+    var bulkId = document.getElementById("bulk-ord-id").value.trim();
+    var bulkDate = document.getElementById("bulk-ord-date").value;
+    var targetDate = document.getElementById("bulk-ord-target-date").value;
+    var bulkStatus = document.getElementById("bulk-ord-status").value;
+    var paymentStatus = document.getElementById("bulk-ord-payment-status").value;
+    var paymentMethod = document.getElementById("bulk-ord-payment-method").value;
+
+    var custName = document.getElementById("bulk-cust-name").value.trim();
+    var custContact = document.getElementById("bulk-cust-contact").value.trim();
+    var custPhone = document.getElementById("bulk-cust-phone").value.trim();
+    var custEmail = document.getElementById("bulk-cust-email").value.trim();
+    var custGstin = document.getElementById("bulk-cust-gstin").value.trim();
+    var custPincode = document.getElementById("bulk-cust-pincode").value.trim();
+    var custAddress = document.getElementById("bulk-cust-address").value.trim();
+
+    var carrier = document.getElementById("bulk-carrier").value.trim();
+    var vehicleNo = document.getElementById("bulk-vehicle-no").value.trim();
+    var lrNo = document.getElementById("bulk-lr-no").value.trim();
+    var warehouse = document.getElementById("bulk-warehouse").value.trim();
+
+    var taxRate = Number(document.getElementById("bulk-tax-rate").value) || 0;
+    var discount = Number(document.getElementById("bulk-discount").value) || 0;
+    var freight = Number(document.getElementById("bulk-freight").value) || 0;
+    var notes = document.getElementById("bulk-notes").value.trim();
+
+    function showErr(msg) {
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.hidden = false;
+        errEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
+
+    if (!bulkId) {
+      showErr("Please provide a Bulk Order ID.");
+      return;
+    }
+    if (!custName) {
+      showErr("Please enter the Company / Firm Name.");
+      return;
+    }
+    if (!custPhone) {
+      showErr("Please enter a valid contact phone number.");
+      return;
+    }
+
+    var bulkTbody = document.getElementById("bulk-items-tbody");
+    var rowEls = bulkTbody ? bulkTbody.querySelectorAll("tr") : [];
+    var lines = [];
+    var itemsGross = 0;
+
+    rowEls.forEach(function (tr) {
+      var titleInput = tr.querySelector(".bulk-item-title");
+      var unitSelect = tr.querySelector(".bulk-item-unit");
+      var priceInput = tr.querySelector(".bulk-item-price");
+      var qtyInput = tr.querySelector(".bulk-item-qty");
+      if (!titleInput || !priceInput || !qtyInput) return;
+
+      var title = titleInput.value.trim();
+      var unit = unitSelect ? unitSelect.value : "Units";
+      var price = Number(priceInput.value) || 0;
+      var qty = Number(qtyInput.value) || 1;
+      if (!title) return;
+
+      var lineTotal = price * qty;
+      itemsGross += lineTotal;
+      lines.push({
+        id: title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        title: title,
+        unitLabel: unit,
+        unitPrice: price,
+        price: price,
+        qty: qty,
+        lineTotal: lineTotal
+      });
+    });
+
+    if (lines.length === 0) {
+      showErr("Please add at least one line item with a title and price.");
+      return;
+    }
+
+    var taxable = Math.max(0, itemsGross - discount);
+    var taxAmount = Math.round((taxable * taxRate) / 100);
+    var grandTotal = taxable + taxAmount + freight;
+
+    var orderPayload = {
+      id: bulkId,
+      createdAt: bulkDate ? new Date(bulkDate).toISOString() : new Date().toISOString(),
+      status: bulkStatus,
+      subtotal: grandTotal,
+      lines: lines,
+      customer: {
+        name: custName,
+        contact_person: custContact,
+        phone: custPhone,
+        email: custEmail,
+        gstin: custGstin,
+        pincode: custPincode,
+        address: custAddress,
+        delivery_partner: carrier,
+        carrier: carrier,
+        vehicle_no: vehicleNo,
+        tracking_id: lrNo,
+        lr_no: lrNo,
+        warehouse: warehouse,
+        target_date: targetDate,
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        discount: discount,
+        shipping: freight,
+        freight: freight,
+        notes: notes,
+        is_bulk: true,
+        order_type: "bulk"
+      }
+    };
+
+    var orders = loadOrders();
+    var existingIdx = -1;
+    for (var i = 0; i < orders.length; i++) {
+      if (orders[i].id === bulkId) {
+        existingIdx = i;
+        break;
+      }
+    }
+
+    if (existingIdx !== -1) {
+      orders[existingIdx] = orderPayload;
+    } else {
+      orders.unshift(orderPayload);
+    }
+
+    saveOrders(orders);
+
+    if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
+      window.maahiSupabase.saveOrder(orderPayload).catch(function (err) {
+        console.warn("Supabase saveOrder failed for bulk order:", err);
+      });
+    }
+
+    closeBulkOrderDrawer();
+    renderBulkOrdersTable();
+    renderTable();
   }
 
   // --- INVENTORY MANAGEMENT ---
@@ -2471,18 +3313,21 @@
     var navOverview = document.getElementById("nav-overview");
     var navOrders = document.getElementById("nav-orders");
     var navQuotes = document.getElementById("nav-quotes");
+    var navBulkOrders = document.getElementById("nav-bulk-orders");
     var navInventory = document.getElementById("nav-inventory");
     var navDatabase = document.getElementById("nav-database");
 
     var mobNavOverview = document.getElementById("mob-nav-overview");
     var mobNavOrders = document.getElementById("mob-nav-orders");
     var mobNavQuotes = document.getElementById("mob-nav-quotes");
+    var mobNavBulkOrders = document.getElementById("mob-nav-bulk-orders");
     var mobNavInventory = document.getElementById("mob-nav-inventory");
     var mobNavDatabase = document.getElementById("mob-nav-database");
 
     var tabOverview = document.getElementById("tab-overview");
     var tabOrders = document.getElementById("tab-orders");
     var tabQuotes = document.getElementById("tab-quotes");
+    var tabBulkOrders = document.getElementById("tab-bulk-orders");
     var tabInventory = document.getElementById("tab-inventory");
     var tabDatabase = document.getElementById("tab-database");
 
@@ -2492,18 +3337,21 @@
       if (tabOverview) tabOverview.style.display = "none";
       if (tabOrders) tabOrders.style.display = "none";
       if (tabQuotes) tabQuotes.style.display = "none";
+      if (tabBulkOrders) tabBulkOrders.style.display = "none";
       if (tabInventory) tabInventory.style.display = "none";
       if (tabDatabase) tabDatabase.style.display = "none";
 
       if (navOverview) navOverview.classList.remove("active");
       if (navOrders) navOrders.classList.remove("active");
       if (navQuotes) navQuotes.classList.remove("active");
+      if (navBulkOrders) navBulkOrders.classList.remove("active");
       if (navInventory) navInventory.classList.remove("active");
       if (navDatabase) navDatabase.classList.remove("active");
 
       if (mobNavOverview) mobNavOverview.classList.remove("active");
       if (mobNavOrders) mobNavOrders.classList.remove("active");
       if (mobNavQuotes) mobNavQuotes.classList.remove("active");
+      if (mobNavBulkOrders) mobNavBulkOrders.classList.remove("active");
       if (mobNavInventory) mobNavInventory.classList.remove("active");
       if (mobNavDatabase) mobNavDatabase.classList.remove("active");
 
@@ -2523,6 +3371,12 @@
         if (mobNavQuotes) mobNavQuotes.classList.add("active");
         refreshOrdersData();
         renderQuotesTable();
+      } else if (hash === "#bulk-orders") {
+        if (tabBulkOrders) tabBulkOrders.style.display = "block";
+        if (navBulkOrders) navBulkOrders.classList.add("active");
+        if (mobNavBulkOrders) mobNavBulkOrders.classList.add("active");
+        refreshOrdersData();
+        renderBulkOrdersTable();
       } else if (hash === "#inventory") {
         if (tabInventory) tabInventory.style.display = "block";
         if (navInventory) navInventory.classList.add("active");
@@ -2538,7 +3392,7 @@
 
     window.addEventListener("hashchange", handleRoute);
 
-    [navOverview, navOrders, navQuotes, navInventory, navDatabase, mobNavOverview, mobNavOrders, mobNavQuotes, mobNavInventory, mobNavDatabase].forEach(function (el) {
+    [navOverview, navOrders, navQuotes, navBulkOrders, navInventory, navDatabase, mobNavOverview, mobNavOrders, mobNavQuotes, mobNavBulkOrders, mobNavInventory, mobNavDatabase].forEach(function (el) {
       if (el) {
         el.addEventListener("click", function () {
           var targetHash = el.getAttribute("href");
@@ -2801,6 +3655,7 @@
       closeDetail();
       closeProductDrawer();
       closeInvoiceDrawer();
+      closeBulkOrderDrawer();
     });
   }
 
@@ -2814,6 +3669,9 @@
       }
       if (invoiceDrawer && invoiceDrawer.classList.contains("is-open")) {
         closeInvoiceDrawer();
+      }
+      if (bulkOrderDrawer && bulkOrderDrawer.classList.contains("is-open")) {
+        closeBulkOrderDrawer();
       }
     }
   });
@@ -2856,6 +3714,69 @@
   if (invTaxRateEl) invTaxRateEl.addEventListener("change", calcInvoiceTotals);
   if (invDiscountEl) invDiscountEl.addEventListener("input", calcInvoiceTotals);
   if (invShippingEl) invShippingEl.addEventListener("input", calcInvoiceTotals);
+
+  // Bulk Orders Listeners
+  if (bulkOrdersSearch) {
+    bulkOrdersSearch.addEventListener("input", renderBulkOrdersTable);
+  }
+
+  if (bulkOrdersStatusFilter) {
+    bulkOrdersStatusFilter.addEventListener("change", renderBulkOrdersTable);
+  }
+
+  if (btnRefreshBulkOrders) {
+    btnRefreshBulkOrders.addEventListener("click", function () {
+      btnRefreshBulkOrders.disabled = true;
+      btnRefreshBulkOrders.textContent = "Syncing...";
+      refreshOrdersData();
+      setTimeout(function () {
+        btnRefreshBulkOrders.disabled = false;
+        btnRefreshBulkOrders.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Refresh &amp; Sync';
+      }, 700);
+    });
+  }
+
+  if (btnExportBulkOrdersExcel) {
+    btnExportBulkOrdersExcel.addEventListener("click", exportBulkOrdersExcel);
+  }
+
+  if (btnCreateBulkOrder) {
+    btnCreateBulkOrder.addEventListener("click", function () {
+      openBulkOrderDrawer();
+    });
+  }
+
+  if (btnCreateFirstBulkOrder) {
+    btnCreateFirstBulkOrder.addEventListener("click", function () {
+      openBulkOrderDrawer();
+    });
+  }
+
+  if (bulkOrderClose) {
+    bulkOrderClose.addEventListener("click", closeBulkOrderDrawer);
+  }
+
+  if (btnCancelBulkOrder) {
+    btnCancelBulkOrder.addEventListener("click", closeBulkOrderDrawer);
+  }
+
+  if (btnBulkAddRow) {
+    btnBulkAddRow.addEventListener("click", function () {
+      addBulkOrderItemRow();
+    });
+  }
+
+  if (bulkOrderForm) {
+    bulkOrderForm.addEventListener("submit", handleBulkOrderFormSubmit);
+  }
+
+  var bulkTaxRateEl = document.getElementById("bulk-tax-rate");
+  var bulkDiscountEl = document.getElementById("bulk-discount");
+  var bulkFreightEl = document.getElementById("bulk-freight");
+
+  if (bulkTaxRateEl) bulkTaxRateEl.addEventListener("change", calcBulkOrderTotals);
+  if (bulkDiscountEl) bulkDiscountEl.addEventListener("input", calcBulkOrderTotals);
+  if (bulkFreightEl) bulkFreightEl.addEventListener("input", calcBulkOrderTotals);
 
   if (btnAddProduct) {
     btnAddProduct.addEventListener("click", function () {

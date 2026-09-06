@@ -75,6 +75,15 @@
             </a>
           </li>
           <li>
+            <a href="#bulk-orders" class="nav-item" id="nav-bulk-orders" onclick="document.getElementById('sidebar').classList.remove('is-open'); document.getElementById('sidebar-backdrop').classList.remove('is-visible');">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Bulk Orders
+              <span class="nav-badge" id="bulk-orders-badge" style="display:none; margin-left:auto; background:var(--gold); color:#1a1500; font-size:0.7rem; font-weight:800; padding:1px 6px; border-radius:10px;">0</span>
+            </a>
+          </li>
+          <li>
             <a href="#inventory" class="nav-item" id="nav-inventory" onclick="document.getElementById('sidebar').classList.remove('is-open'); document.getElementById('sidebar-backdrop').classList.remove('is-visible');">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -395,6 +404,102 @@
         </section>
       </div>
 
+      <!-- TAB: Bulk Orders -->
+      <div id="tab-bulk-orders" class="dashboard-tab" style="display: none;">
+        <header class="topbar">
+          <div class="topbar-left">
+            <h1>Bulk &amp; Wholesale Orders</h1>
+            <p class="topbar-subtitle">Manage large volume commercial contracts, farm supplies, and bulk logistics.</p>
+          </div>
+          <div class="topbar-right" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn-primary" id="btn-create-bulk-order" style="background: linear-gradient(135deg, var(--gold), #b8860b); color: #1a1500; font-weight: 700;" title="Add new bulk / commercial order">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              + Add Bulk Order
+            </button>
+            <button type="button" class="btn-primary" id="btn-refresh-bulk-orders" title="Refresh & Sync Bulk Orders">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh &amp; Sync
+            </button>
+            <button type="button" class="btn-primary" id="btn-export-bulk-orders-excel" title="Export bulk orders to Excel/CSV">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 00-2 2z" />
+              </svg>
+              Export Excel
+            </button>
+          </div>
+        </header>
+
+        <!-- Bulk Metrics KPI Cards -->
+        <section class="metrics-grid" id="bulk-stats" aria-label="Bulk Key Performance Indicators" style="margin-bottom: 1.5rem;">
+          <!-- Injected dynamically by JavaScript -->
+        </section>
+
+        <!-- Bulk Orders List Section -->
+        <section class="orders-section">
+          <div class="orders-section-header">
+            <h2>Commercial Contracts &amp; Bulk Shipments</h2>
+            
+            <div class="filter-controls">
+              <div class="search-box">
+                <svg xmlns="http://www.w3.org/2000/svg" class="search-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="search" id="bulk-orders-search" placeholder="Search Bulk ID, Company, Phone, GSTIN, Truck..." autocomplete="off">
+              </div>
+
+              <select id="bulk-orders-status-filter" class="filter-select" aria-label="Filter by bulk order status">
+                <option value="">All Statuses</option>
+                <option value="new">New / Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="processing">Production / Processing</option>
+                <option value="shipped">Shipped / In Transit</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Bulk Orders Table Card -->
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="orders-table" id="bulk-orders-table">
+                <thead>
+                  <tr>
+                    <th>Bulk Order ID</th>
+                    <th>Date &amp; Delivery</th>
+                    <th>Buyer / Company</th>
+                    <th>Bulk Items &amp; Qty</th>
+                    <th>Amount &amp; Terms</th>
+                    <th>Status &amp; Transport</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bulk-orders-tbody">
+                  <!-- Injected dynamically by JavaScript -->
+                </tbody>
+              </table>
+
+              <div id="bulk-orders-empty" class="orders-empty" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 0.75rem; opacity: 0.6;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <p>No bulk orders recorded yet.</p>
+                <small>Record bulk supply agreements, truckloads, and wholesale shipments with custom discounts.</small>
+                <div style="margin-top: 1rem;">
+                  <button type="button" class="btn-primary" id="btn-create-first-bulk-order" style="background: linear-gradient(135deg, var(--gold), #b8860b); color: #1a1500; font-weight: 700;">
+                    + Add Your First Bulk Order
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
       <!-- TAB: Inventory -->
       <div id="tab-inventory" class="dashboard-tab" style="display: none;">
         <header class="topbar">
@@ -570,6 +675,12 @@ create policy "Allow public write access to orders" on public.orders for all usi
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
           </svg>
           <span>Quotes</span>
+        </a>
+        <a href="#bulk-orders" class="mobile-bottom-item" id="mob-nav-bulk-orders">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span>Bulk</span>
         </a>
         <a href="#inventory" class="mobile-bottom-item" id="mob-nav-inventory">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -897,6 +1008,243 @@ create policy "Allow public write access to orders" on public.orders for all usi
       </div>
 
       <p class="form-error" id="invoice-form-error" role="alert" hidden style="color: var(--rose); font-size: 0.85rem; font-weight: 600; margin: 0;"></p>
+    </form>
+  </aside>
+
+  <!-- Slide-out side drawer for Add / Edit Bulk Order -->
+  <aside class="invoice-drawer bulk-order-drawer" id="bulk-order-drawer" aria-labelledby="bulk-drawer-title" aria-hidden="true" style="display: none;">
+    <div class="drawer-header">
+      <div>
+        <span class="drawer-subtitle">B2B Commercial &amp; Wholesale</span>
+        <h2 id="bulk-drawer-title" class="drawer-title">Add New Bulk Order</h2>
+      </div>
+      <button type="button" class="drawer-close-btn" id="bulk-order-close" aria-label="Close bulk order drawer">×</button>
+    </div>
+    
+    <form class="drawer-body" id="bulk-order-form" novalidate style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+      
+      <!-- Bulk Order Metadata Section -->
+      <section>
+        <div class="invoice-section-title">
+          <span>📦 Order Identification &amp; Schedule</span>
+          <span id="bulk-badge-status" class="status-pill status-new" style="font-size: 0.68rem;">NEW</span>
+        </div>
+        <div class="invoice-form-grid">
+          <div class="field">
+            <label for="bulk-ord-id">Bulk Order ID <span class="req">*</span></label>
+            <input type="text" id="bulk-ord-id" name="id" required placeholder="e.g. BLK-2026-1001" style="font-family: monospace; font-weight: 700;">
+          </div>
+          <div class="field">
+            <label for="bulk-ord-date">Order Date <span class="req">*</span></label>
+            <input type="date" id="bulk-ord-date" name="date" required>
+          </div>
+          <div class="field">
+            <label for="bulk-ord-target-date">Target Dispatch / Delivery Date</label>
+            <input type="date" id="bulk-ord-target-date" name="target_date">
+          </div>
+        </div>
+
+        <div class="invoice-form-grid" style="margin-top: 0.75rem;">
+          <div class="field">
+            <label for="bulk-ord-status">Fulfillment Status</label>
+            <select id="bulk-ord-status" name="status">
+              <option value="new" selected>New / Booking</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="processing">Production / Processing</option>
+              <option value="shipped">Shipped / In Transit</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bulk-ord-payment-status">Payment Status</label>
+            <select id="bulk-ord-payment-status" name="payment_status">
+              <option value="pending" selected>Pending Payment</option>
+              <option value="partial">Partially Paid (Advance)</option>
+              <option value="paid">✓ Paid in Full</option>
+              <option value="credit">Commercial Credit (Net 30/60)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bulk-ord-payment-method">Payment Mode</label>
+            <select id="bulk-ord-payment-method" name="payment_method">
+              <option value="bank_transfer" selected>Bank Transfer (RTGS / NEFT)</option>
+              <option value="cheque">Company Cheque / DD</option>
+              <option value="upi">UPI / Instant Transfer</option>
+              <option value="cash">Cash on Dispatch / Delivery</option>
+              <option value="letter_of_credit">Letter of Credit (LC)</option>
+              <option value="razorpay">Razorpay Online</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Client & Company Details -->
+      <section>
+        <div class="invoice-section-title">
+          <span>🏢 Buyer / Company Profile</span>
+        </div>
+        <div class="invoice-form-grid">
+          <div class="field">
+            <label for="bulk-cust-name">Company / Firm Name <span class="req">*</span></label>
+            <input type="text" id="bulk-cust-name" name="customer_name" required placeholder="e.g. Green Agro Nursery &amp; Farms Pvt Ltd">
+          </div>
+          <div class="field">
+            <label for="bulk-cust-contact">Contact Person</label>
+            <input type="text" id="bulk-cust-contact" name="contact_person" placeholder="e.g. Mr. Ramesh Kumar">
+          </div>
+          <div class="field">
+            <label for="bulk-cust-phone">Phone Number <span class="req">*</span></label>
+            <input type="tel" id="bulk-cust-phone" name="customer_phone" required placeholder="e.g. 9876543210">
+          </div>
+          <div class="field">
+            <label for="bulk-cust-email">Email Address</label>
+            <input type="email" id="bulk-cust-email" name="customer_email" placeholder="e.g. procurement@greenagro.com">
+          </div>
+          <div class="field">
+            <label for="bulk-cust-gstin">GSTIN (Commercial Tax ID)</label>
+            <input type="text" id="bulk-cust-gstin" name="customer_gstin" placeholder="e.g. 33AAAAA0000A1Z5" style="text-transform: uppercase;">
+          </div>
+          <div class="field">
+            <label for="bulk-cust-pincode">Pincode / Destination</label>
+            <input type="text" id="bulk-cust-pincode" name="customer_pincode" placeholder="e.g. 641001">
+          </div>
+        </div>
+        <div class="field" style="margin-top: 0.65rem;">
+          <label for="bulk-cust-address">Full Delivery / Factory / Unloading Address</label>
+          <textarea id="bulk-cust-address" name="customer_address" rows="2" placeholder="Industrial estate, plot number, landmark, city, state..."></textarea>
+        </div>
+      </section>
+
+      <!-- Transport & Logistics -->
+      <section>
+        <div class="invoice-section-title">
+          <span>🚛 Dispatch &amp; Freight Logistics</span>
+        </div>
+        <div class="invoice-form-grid">
+          <div class="field">
+            <label for="bulk-carrier">Freight Carrier / Transporter</label>
+            <input type="text" id="bulk-carrier" list="bulk-carrier-list" placeholder="e.g. VRL Logistics, TCI Express, Dedicated Lorry">
+            <datalist id="bulk-carrier-list">
+              <option value="VRL Logistics">
+              <option value="TCI Express">
+              <option value="Safechem Freight">
+              <option value="Dedicated 10-Wheeler Truck">
+              <option value="Dedicated 6-Wheeler Lorry">
+              <option value="Customer Arranged Vehicle">
+              <option value="Container Trailer 20ft / 40ft">
+            </datalist>
+          </div>
+          <div class="field">
+            <label for="bulk-vehicle-no">Vehicle / Lorry / Container No.</label>
+            <input type="text" id="bulk-vehicle-no" placeholder="e.g. TN-38-AB-1234" style="text-transform: uppercase; font-family: monospace;">
+          </div>
+          <div class="field">
+            <label for="bulk-lr-no">Lorry Receipt (LR) / AWB / E-Way Bill</label>
+            <input type="text" id="bulk-lr-no" placeholder="e.g. LR-98765432" style="font-family: monospace;">
+          </div>
+          <div class="field">
+            <label for="bulk-warehouse">Dispatch Factory / Warehouse</label>
+            <input type="text" id="bulk-warehouse" placeholder="e.g. Pollachi Unit 1 / Main Facility">
+          </div>
+        </div>
+      </section>
+
+      <!-- Bulk Product Line Items -->
+      <section>
+        <div class="invoice-section-title">
+          <span>📦 Bulk Line Items &amp; Specifications</span>
+          <button type="button" class="btn-invoice-print" id="btn-bulk-add-row" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
+            + Add Product Row
+          </button>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table class="invoice-items-table" id="bulk-items-table">
+            <thead>
+              <tr>
+                <th style="width: 38%;">Product / Grade</th>
+                <th style="width: 16%;">Unit</th>
+                <th style="width: 16%;">Rate / Unit (₹)</th>
+                <th style="width: 14%;">Quantity</th>
+                <th style="width: 16%; text-align: right;">Total (₹)</th>
+                <th style="width: 6%;"></th>
+              </tr>
+            </thead>
+            <tbody id="bulk-items-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Pricing, GST & Bulk Discounts -->
+      <section>
+        <div class="invoice-form-grid" style="align-items: end;">
+          <div class="field">
+            <label for="bulk-tax-rate">GST Rate (%)</label>
+            <select id="bulk-tax-rate" name="tax_rate">
+              <option value="0" selected>0% (Exempt / Agricultural Coir)</option>
+              <option value="5">5% GST (2.5% CGST + 2.5% SGST)</option>
+              <option value="12">12% GST (6% CGST + 6% SGST)</option>
+              <option value="18">18% GST (9% CGST + 9% SGST)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bulk-discount">Bulk Tier Discount (₹)</label>
+            <input type="number" id="bulk-discount" name="discount" min="0" value="0" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="bulk-freight">Freight / Transportation (₹)</label>
+            <input type="number" id="bulk-freight" name="freight" min="0" value="0" placeholder="0">
+          </div>
+        </div>
+
+        <div class="invoice-summary-box">
+          <div class="invoice-summary-row">
+            <span>Items Gross Total:</span>
+            <span id="bulk-calc-subtotal" style="font-weight: 600;">₹0</span>
+          </div>
+          <div class="invoice-summary-row" id="bulk-row-discount" style="display: none;">
+            <span>Bulk Volume Discount:</span>
+            <span id="bulk-calc-discount" style="color: var(--rose);">-₹0</span>
+          </div>
+          <div class="invoice-summary-row" id="bulk-row-tax" style="display: none;">
+            <span>GST Tax:</span>
+            <span id="bulk-calc-tax">₹0</span>
+          </div>
+          <div class="invoice-summary-row" id="bulk-row-freight" style="display: none;">
+            <span>Freight &amp; Handling:</span>
+            <span id="bulk-calc-freight">₹0</span>
+          </div>
+          <div class="invoice-summary-row total">
+            <span>Commercial Order Grand Total:</span>
+            <span id="bulk-calc-grand-total" style="color: var(--gold); font-size: 1.25rem;">₹0</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Specifications & Special Instructions -->
+      <section>
+        <div class="invoice-section-title">
+          <span>📝 Specifications, Terms &amp; Logistics Notes</span>
+        </div>
+        <div class="field">
+          <textarea id="bulk-notes" name="notes" rows="2" placeholder="e.g. Electrical Conductivity (EC) &lt; 0.5 mS/cm, Moisture &lt; 15%, 24-pallet stretch wrapped, forklift unloading at client premises..."></textarea>
+        </div>
+      </section>
+
+      <!-- Submit & Cancel Buttons -->
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
+        <button type="submit" class="btn-primary" id="btn-save-bulk-order" style="flex: 1.2; justify-content: center; padding: 0.75rem; font-weight: 700; background: linear-gradient(135deg, var(--gold), #b8860b); color: #1a1500;">
+          💾 Save Bulk Order
+        </button>
+        <button type="button" class="btn-logout" id="btn-cancel-bulk-order" style="flex: 0.6; justify-content: center; padding: 0.75rem;">
+          Cancel
+        </button>
+      </div>
+
+      <p class="form-error" id="bulk-form-error" role="alert" hidden style="color: var(--rose); font-size: 0.85rem; font-weight: 600; margin: 0;"></p>
     </form>
   </aside>
 
