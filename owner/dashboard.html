@@ -729,7 +729,6 @@ create policy "Allow public write access to orders" on public.orders for all usi
       <div class="field" id="prod-id-field">
         <label for="prod-id">Product ID / Code <span class="req">*</span></label>
         <input type="text" id="prod-id" name="id" required placeholder="e.g. 5kg, growbags, premium-husk">
-        <small style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.25rem;">Unique lowercase code (letters, numbers, hyphens only).</small>
       </div>
       
       <div class="field" style="margin-top: 1rem;">
@@ -787,7 +786,7 @@ create policy "Allow public write access to orders" on public.orders for all usi
 
       <div class="field" style="margin-top: 1rem;">
         <label>Photo Preview</label>
-        <div id="prod-image-preview" style="width: 100%; height: 120px; border-radius: var(--radius-sm); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; background-size: cover; background-position: center; color: var(--text-muted); font-size: 0.85rem; background-repeat: no-repeat;">
+        <div id="prod-image-preview" style="width: 100%; height: 160px; border-radius: var(--radius-sm); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; background-size: contain; background-position: center; color: var(--text-muted); font-size: 0.85rem; background-repeat: no-repeat; background-color: #f8faf8;">
           No photo selected
         </div>
       </div>

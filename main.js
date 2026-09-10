@@ -411,10 +411,17 @@
         ? '<p class="tier-upsell-hint">💡 ' + escapeHtml(pricing.nextTierHint) + '</p>'
         : '';
 
+      var thumbHtml = '';
+      if (p.image) {
+        thumbHtml = '<div class="cart-line-thumb" style="background-image: url(' + p.image + '); background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #fbfbf9;" aria-hidden="true"></div>';
+      } else if (p.thumb) {
+        thumbHtml = '<div class="cart-line-thumb ' + p.thumb + '" aria-hidden="true"></div>';
+      } else {
+        thumbHtml = '<div class="cart-line-thumb" style="background: linear-gradient(135deg, var(--accent), var(--gold)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.25rem;" aria-hidden="true">🌱</div>';
+      }
+
       row.innerHTML =
-        '<div class="cart-line-thumb ' +
-        p.thumb +
-        '" aria-hidden="true"></div>' +
+        thumbHtml +
         '<div class="cart-line-info">' +
         '<p class="cart-line-title">' + escapeHtml(p.title) + '</p>' +
         pricingHtml +
@@ -1217,6 +1224,15 @@
 
   if (productGrid) {
     productGrid.addEventListener("click", function (e) {
+      // 0. Product Photo Click -> Open Full Resolution Lightbox
+      var mediaBtn = e.target.closest(".product-card-media[data-full-image]");
+      if (mediaBtn) {
+        var fullSrc = mediaBtn.getAttribute("data-full-image");
+        var fullTitle = mediaBtn.getAttribute("data-full-title") || "Product Photo";
+        openProductPhotoLightbox(fullSrc, fullTitle);
+        return;
+      }
+
       // 1. Add to Cart button
       var addBtn = e.target.closest("[data-add]");
       if (addBtn) {
@@ -1402,6 +1418,65 @@
       var prodId = inp.getAttribute("data-qty-for");
       if (card && prodId) {
         updateCardBulkCalculator(card, prodId);
+      }
+    });
+
+    // Keyboard support for opening full photo on media button
+    productGrid.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        var mediaBtn = e.target.closest(".product-card-media[data-full-image]");
+        if (mediaBtn) {
+          e.preventDefault();
+          var fullSrc = mediaBtn.getAttribute("data-full-image");
+          var fullTitle = mediaBtn.getAttribute("data-full-title") || "Product Photo";
+          openProductPhotoLightbox(fullSrc, fullTitle);
+        }
+      }
+    });
+  }
+
+  // ==========================================================================
+  // Full Resolution Product Photo Lightbox Modal
+  // ==========================================================================
+  function openProductPhotoLightbox(src, title) {
+    var modal = document.getElementById("product-photo-lightbox");
+    if (!modal) return;
+    var img = modal.querySelector(".lightbox-body img");
+    var titleEl = modal.querySelector(".lightbox-title");
+    if (img) {
+      img.src = src;
+      img.alt = (title || "Product Photo") + " in full resolution";
+    }
+    if (titleEl) {
+      titleEl.textContent = title || "Product Photo";
+    }
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeProductPhotoLightbox() {
+    var modal = document.getElementById("product-photo-lightbox");
+    if (!modal) return;
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  var lightboxModal = document.getElementById("product-photo-lightbox");
+  if (lightboxModal) {
+    var lightboxClose = document.getElementById("lightbox-close-btn");
+    if (lightboxClose) {
+      lightboxClose.addEventListener("click", closeProductPhotoLightbox);
+    }
+    lightboxModal.addEventListener("click", function (e) {
+      if (e.target === lightboxModal) {
+        closeProductPhotoLightbox();
+      }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && lightboxModal.classList.contains("is-open")) {
+        closeProductPhotoLightbox();
       }
     });
   }
@@ -1887,9 +1962,17 @@
       
       var mediaHtml = '';
       if (p.image) {
-        mediaHtml = '<div class="product-card-media" role="img" aria-label="" style="background-image: url(' + p.image + '); background-size: cover; background-position: center; background-repeat: no-repeat;"></div>';
+        mediaHtml = 
+          '<div class="product-card-media" role="button" tabindex="0" title="Click to view full photo" aria-label="View full photo of ' + escapeHtml(p.title) + '" data-full-image="' + escapeHtml(p.image) + '" data-full-title="' + escapeHtml(p.title) + '">' +
+            '<img src="' + p.image + '" alt="' + escapeHtml(p.title) + '" class="product-card-img" loading="lazy">' +
+            '<span class="product-zoom-badge" title="View Full Photo" aria-hidden="true">' +
+              '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line>' +
+              '</svg>' +
+            '</span>' +
+          '</div>';
       } else if (p.thumb) {
-        mediaHtml = '<div class="product-card-media ' + p.thumb + '" role="img" aria-label=""></div>';
+        mediaHtml = '<div class="product-card-media product-card-media--has-bg ' + p.thumb + '" role="img" aria-label="' + escapeHtml(p.title) + '"></div>';
       } else {
         mediaHtml = '<div class="product-card-media product-card-media--default" role="img" aria-label="" style="background: linear-gradient(135deg, var(--accent), var(--gold)); opacity: 0.85; display:flex; align-items:center; justify-content:center; color:#fff; font-size:3rem; font-family:var(--font-display); font-weight:700;">🌱</div>';
       }

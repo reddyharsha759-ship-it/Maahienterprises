@@ -2962,7 +2962,7 @@
       
       var thumbHtml = "";
       if (p.image) {
-        thumbHtml = '<div class="cart-line-thumb" style="width:40px; height:40px; border-radius:6px; flex-shrink:0; background-image: url(' + p.image + '); background-size: cover; background-position: center; background-repeat: no-repeat;"></div>';
+        thumbHtml = '<div class="cart-line-thumb" style="width:40px; height:40px; border-radius:6px; flex-shrink:0; background-image: url(' + p.image + '); background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #f7f9f7; border: 1px solid var(--border);"></div>';
       } else if (p.thumb) {
         thumbHtml = '<div class="cart-line-thumb ' + p.thumb + '" style="width:40px; height:40px; border-radius:6px; flex-shrink:0;"></div>';
       } else {
@@ -3856,10 +3856,6 @@
       // Validation
       if (!id) {
         showProductError("Product ID is required.");
-        return;
-      }
-      if (!isEdit && !/^[a-z0-9\-]+$/.test(id)) {
-        showProductError("Product ID must be lowercase letters, numbers, and hyphens only.");
         return;
       }
       if (!title) {

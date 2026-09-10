@@ -180,7 +180,7 @@
         <p class="products-shop-hint">Add items to your cart, then open <strong>Cart</strong> or go to <strong>Checkout</strong> to place your order.</p>
         <div class="product-grid" id="product-grid">
           <article class="product-card" data-product-id="5kg" data-search="5kg cocopeat block professional hydroponic soilless">
-            <div class="product-card-media product-card-media--5kg" role="img" aria-label=""></div>
+            <div class="product-card-media product-card-media--5kg product-card-media--has-bg" role="img" aria-label="5 kg cocopeat blocks"></div>
             <h3>5 kg cocopeat blocks</h3>
             <p class="product-tag">Professional grade</p>
             <p>The ultimate eco-friendly solution for professional-grade plant growth, compost mixes, hydroponics, or soilless gardening.</p>
@@ -209,7 +209,7 @@
             </div>
           </article>
           <article class="product-card" data-product-id="650g" data-search="650g cocopeat small seedling herb microgreen">
-            <div class="product-card-media product-card-media--650g" role="img" aria-label=""></div>
+            <div class="product-card-media product-card-media--650g product-card-media--has-bg" role="img" aria-label="650 g cocopeat blocks"></div>
             <h3>650 g cocopeat blocks</h3>
             <p class="product-tag">Compact &amp; versatile</p>
             <p>Eco-friendly and ideal for small spaces — seedlings, herbs, or microgreens.</p>
@@ -238,7 +238,7 @@
             </div>
           </article>
           <article class="product-card" data-product-id="growbags" data-search="grow bag tomato cucumber strawberry uv">
-            <div class="product-card-media product-card-media--growbags" role="img" aria-label=""></div>
+            <div class="product-card-media product-card-media--growbags product-card-media--has-bg" role="img" aria-label="Grow bags"></div>
             <h3>Grow bags</h3>
             <p class="product-tag">Ready to use</p>
             <p>Optimal water retention and aeration for robust roots. UV-protected, pH-balanced, sterile, and resistant to pests and diseases.</p>
@@ -262,7 +262,7 @@
             </div>
           </article>
           <article class="product-card" data-product-id="husk" data-search="coir husk chip orchid succulent drainage">
-            <div class="product-card-media product-card-media--husk" role="img" aria-label=""></div>
+            <div class="product-card-media product-card-media--husk product-card-media--has-bg" role="img" aria-label="Coir husk chip block"></div>
             <h3>Coir husk chip block</h3>
             <p class="product-tag">Drainage &amp; aeration</p>
             <p>Ideal for orchids, succulents, cactus, and any crop that prefers drier roots. Superior air circulation and reduced waterlogging.</p>
@@ -601,7 +601,18 @@
     <div class="cart-drawer-body" id="profile-drawer-body"></div>
   </aside>
 
-
+  <!-- Product Photo Lightbox Modal -->
+  <div class="image-lightbox-modal" id="product-photo-lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="lightbox-title">
+    <div class="lightbox-dialog">
+      <div class="lightbox-header">
+        <h3 class="lightbox-title" id="lightbox-title">Product Photo</h3>
+        <button type="button" class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Close photo view">×</button>
+      </div>
+      <div class="lightbox-body">
+        <img id="lightbox-img" src="" alt="Product Photo in full resolution" loading="lazy">
+      </div>
+    </div>
+  </div>
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
