@@ -728,7 +728,8 @@ create policy "Allow public write access to orders" on public.orders for all usi
     <form class="drawer-body" id="product-form" novalidate>
       <div class="field" id="prod-id-field">
         <label for="prod-id">Product ID / Code <span class="req">*</span></label>
-        <input type="text" id="prod-id" name="id" required placeholder="e.g. 5kg, growbags, premium-husk">
+        <input type="text" id="prod-id" name="id" required placeholder="e.g. cocopole, growbags, premium-husk">
+        <small style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.25rem;">Auto-generated from title, or enter a custom unique code.</small>
       </div>
       
       <div class="field" style="margin-top: 1rem;">
@@ -742,8 +743,8 @@ create policy "Allow public write access to orders" on public.orders for all usi
       </div>
 
       <div class="field" style="margin-top: 1rem;">
-        <label for="prod-unit">Unit Label <span class="req">*</span></label>
-        <input type="text" id="prod-unit" name="unitLabel" required placeholder="e.g. block, bag, kg">
+        <label for="prod-unit">Unit Label</label>
+        <input type="text" id="prod-unit" name="unitLabel" placeholder="e.g. block, bag, kg, piece (default: piece)">
       </div>
 
       <div class="field" style="margin-top: 1rem;">

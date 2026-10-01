@@ -56,6 +56,43 @@
   updateProfileUI(activeUser);
 
   var DEFAULT_CATALOG = {
+    cocopole: {
+      title: "Coir Cocopoles",
+      price: 30,
+      unitLabel: "Qty",
+      thumb: null,
+      tag: "Natural climber support",
+      desc: "Made from natural coconut husk, excellent water retention, ideal for climbers.",
+      features: [
+        "Made from natural coconut husk",
+        "Excellent water retention",
+        "Improves soil aeration and drainage"
+      ]
+    },
+    cocopeat: {
+      title: "1 kg Cocopeat Block or Cake",
+      price: 38,
+      unitLabel: "Kg",
+      thumb: "product-card-media--650g",
+      tag: "Compact block",
+      desc: "1 kg cocopeat block for nursery and home gardening.",
+      features: [
+        "High water holding capacity",
+        "100% natural and organic"
+      ]
+    },
+    cocopeat5kg: {
+      title: "5 kg Cocopeat Block & Cake",
+      price: 38,
+      unitLabel: "Kg",
+      thumb: "product-card-media--5kg",
+      tag: "Bulk block",
+      desc: "5 kg block for commercial greenhouses and large pots.",
+      features: [
+        "Expandable up to 75 L",
+        "Optimal pH and EC"
+      ]
+    },
     "5kg": {
       title: "5 kg cocopeat blocks",
       price: 220,
@@ -108,21 +145,51 @@
     }
   };
 
+  var inMemoryCatalog = null;
+
   function loadCatalog() {
+    if (inMemoryCatalog && typeof inMemoryCatalog === "object" && Object.keys(inMemoryCatalog).length > 0) {
+      return inMemoryCatalog;
+    }
     try {
       var raw = localStorage.getItem(CATALOG_KEY);
       if (!raw) {
-        localStorage.setItem(CATALOG_KEY, JSON.stringify(DEFAULT_CATALOG));
-        return JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+        saveCatalog(DEFAULT_CATALOG);
+        inMemoryCatalog = JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+        return inMemoryCatalog;
       }
-      return JSON.parse(raw);
+      inMemoryCatalog = JSON.parse(raw);
+      return inMemoryCatalog;
     } catch (e) {
-      return JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+      inMemoryCatalog = JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+      return inMemoryCatalog;
     }
   }
 
   function saveCatalog(catalog) {
-    localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog));
+    if (!catalog || typeof catalog !== "object") return;
+    inMemoryCatalog = catalog;
+    try {
+      localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog));
+    } catch (e) {
+      console.warn("Storage quota exceeded in saveCatalog, storing stripped version for cache:", e);
+      try {
+        var lightCatalog = {};
+        Object.keys(catalog).forEach(function (k) {
+          var p = catalog[k];
+          if (!p) return;
+          var copy = Object.assign({}, p);
+          // Omit very large base64 data URIs from localStorage cache to prevent quota errors
+          if (copy.image && copy.image.startsWith("data:") && copy.image.length > 25000) {
+            delete copy.image;
+          }
+          lightCatalog[k] = copy;
+        });
+        localStorage.setItem(CATALOG_KEY, JSON.stringify(lightCatalog));
+      } catch (e2) {
+        console.warn("LocalStorage completely full, keeping in-memory catalog active:", e2);
+      }
+    }
   }
 
   function refreshOrdersData() {
@@ -176,8 +243,10 @@
 
     if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
       window.maahiSupabase.fetchCatalog().then(function (dbCatalog) {
-        if (dbCatalog) {
-          saveCatalog(dbCatalog);
+        if (dbCatalog && typeof dbCatalog === "object") {
+          var current = loadCatalog();
+          var merged = Object.assign({}, current, dbCatalog);
+          saveCatalog(merged);
           renderInventoryTable();
         }
       }).catch(function (err) {
@@ -3036,6 +3105,14 @@
       preview.textContent = "No photo selected";
     }
     
+    var saveBtn = document.getElementById("btn-save-product");
+    var cancelBtn = document.getElementById("btn-cancel-product");
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = (id && product) ? "Update Product" : "Save Product";
+    }
+    if (cancelBtn) cancelBtn.disabled = false;
+
     if (id && product) {
       productDrawerTitle.textContent = "Edit Product: " + id;
       productForm.elements["id"].value = id;
@@ -3043,6 +3120,7 @@
       if (idField) {
         idField.style.opacity = "0.6";
         idField.style.cursor = "not-allowed";
+        idField.dataset.userEdited = "true";
       }
       productForm.elements["title"].value = product.title;
       productForm.elements["price"].value = product.price;
@@ -3070,6 +3148,10 @@
       if (idField) {
         idField.style.opacity = "1";
         idField.style.cursor = "text";
+        idField.dataset.userEdited = "false";
+      }
+      if (productForm.elements["unitLabel"]) {
+        productForm.elements["unitLabel"].value = "piece";
       }
     }
     
@@ -3796,20 +3878,80 @@
   var urlInp = document.getElementById("prod-image-url");
   var preview = document.getElementById("prod-image-preview");
 
+  function compressImageFile(file, maxDimension, quality, callback) {
+    if (!file || !file.type.match(/^image\//i)) {
+      callback(null, new Error("Please select a valid image file."));
+      return;
+    }
+    var reader = new FileReader();
+    reader.onerror = function () {
+      callback(null, new Error("Failed to read image file."));
+    };
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onerror = function () {
+        callback(null, new Error("Failed to process image data."));
+      };
+      img.onload = function () {
+        try {
+          var width = img.width;
+          var height = img.height;
+          var maxDim = maxDimension || 900;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          var canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          var ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          var q = quality || 0.82;
+          var dataUrl = canvas.toDataURL("image/jpeg", q);
+          callback(dataUrl, null);
+        } catch (err) {
+          if (e.target.result && e.target.result.length < 250000) {
+            callback(e.target.result, null);
+          } else {
+            callback(null, err);
+          }
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   if (fileInp) {
     fileInp.addEventListener("change", function () {
       var file = fileInp.files[0];
       if (file) {
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          currentUploadedBase64 = e.target.result;
+        if (preview) {
+          preview.textContent = "Optimizing image...";
+          preview.style.backgroundImage = "";
+        }
+        compressImageFile(file, 900, 0.82, function (dataUrl, err) {
+          if (err || !dataUrl) {
+            if (preview) {
+              preview.textContent = "Error optimizing photo: " + (err ? err.message : "Invalid format");
+            }
+            return;
+          }
+          currentUploadedBase64 = dataUrl;
           if (preview) {
             preview.style.backgroundImage = "url(" + currentUploadedBase64 + ")";
-            preview.textContent = "";
+            var approxKb = Math.round(currentUploadedBase64.length / 1024);
+            preview.textContent = "Photo ready (" + approxKb + " KB)";
           }
           if (urlInp) urlInp.value = "";
-        };
-        reader.readAsDataURL(file);
+        });
       }
     });
   }
@@ -3833,6 +3975,24 @@
     });
   }
 
+  var prodTitleInp = document.getElementById("prod-title");
+  var prodIdInp = document.getElementById("prod-id");
+  if (prodTitleInp && prodIdInp) {
+    prodTitleInp.addEventListener("input", function () {
+      if (!prodIdInp.readOnly && (!prodIdInp.dataset.userEdited || prodIdInp.dataset.userEdited === "false")) {
+        var slug = prodTitleInp.value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        prodIdInp.value = slug;
+      }
+    });
+    prodIdInp.addEventListener("input", function () {
+      if (prodIdInp.value.trim()) {
+        prodIdInp.dataset.userEdited = "true";
+      } else {
+        prodIdInp.dataset.userEdited = "false";
+      }
+    });
+  }
+
   if (productForm) {
     productForm.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -3852,10 +4012,21 @@
       var desc = productForm.elements["desc"].value.trim();
       var featuresText = productForm.elements["features"].value;
       var thumb = productForm.elements["thumb"].value;
+
+      // Auto-generate ID from title if missing
+      if (!id && title) {
+        id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        if (idField) idField.value = id;
+      }
+
+      // Default unitLabel if empty
+      if (!unitLabel) {
+        unitLabel = "piece";
+      }
       
       // Validation
       if (!id) {
-        showProductError("Product ID is required.");
+        showProductError("Product ID or Title is required.");
         return;
       }
       if (!title) {
@@ -3866,15 +4037,16 @@
         showProductError("Price must be a valid number greater than or equal to 0.");
         return;
       }
-      if (!unitLabel) {
-        showProductError("Unit label is required.");
-        return;
-      }
       
       var catalog = loadCatalog();
       if (!isEdit && catalog[id]) {
-        showProductError("A product with ID '" + id + "' already exists.");
-        return;
+        var baseId = id;
+        var counter = 2;
+        while (catalog[id]) {
+          id = baseId + "-" + counter;
+          counter++;
+        }
+        if (idField) idField.value = id;
       }
       
       var features = [];
@@ -3898,9 +4070,10 @@
       catalog[id] = productObj;
       saveCatalog(catalog);
 
+      var saveBtn = document.getElementById("btn-save-product");
+      var cancelBtn = document.getElementById("btn-cancel-product");
+
       if (window.maahiSupabase && window.maahiSupabase.isConnected()) {
-        var saveBtn = document.getElementById("btn-save-product");
-        var cancelBtn = document.getElementById("btn-cancel-product");
         if (saveBtn) {
           saveBtn.disabled = true;
           saveBtn.textContent = "Saving...";
@@ -3910,7 +4083,7 @@
         window.maahiSupabase.saveProduct(id, productObj).then(function () {
           if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.textContent = "Save Product";
+            saveBtn.textContent = isEdit ? "Update Product" : "Save Product";
           }
           if (cancelBtn) cancelBtn.disabled = false;
           closeProductDrawer();
@@ -3918,10 +4091,11 @@
         }).catch(function (err) {
           if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.textContent = "Save Product";
+            saveBtn.textContent = isEdit ? "Update Product" : "Save Product";
           }
           if (cancelBtn) cancelBtn.disabled = false;
-          showProductError("Failed to save to Supabase: " + (err.message || err));
+          var msg = (err && (err.message || err.details || err.hint)) ? (err.message || err.details || err.hint) : (typeof err === "string" ? err : JSON.stringify(err));
+          showProductError("Failed to save to Supabase: " + msg);
         });
       } else {
         closeProductDrawer();

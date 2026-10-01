@@ -30,6 +30,46 @@
   var CATALOG_KEY = "glc_catalog_v1";
 
   var DEFAULT_CATALOG = {
+    cocopole: {
+      title: "Coir Cocopoles",
+      sku: "MAAHI-CP-POLE",
+      price: 30,
+      unitLabel: "Qty",
+      thumb: null,
+      tag: "Natural climber support",
+      desc: "Made from natural coconut husk, excellent water retention, ideal for climbers.",
+      features: [
+        "Made from natural coconut husk",
+        "Excellent water retention",
+        "Improves soil aeration and drainage"
+      ]
+    },
+    cocopeat: {
+      title: "1 kg Cocopeat Block or Cake",
+      sku: "MAAHI-CP-1KG",
+      price: 38,
+      unitLabel: "Kg",
+      thumb: "product-card-media--650g",
+      tag: "Compact block",
+      desc: "1 kg cocopeat block for nursery and home gardening.",
+      features: [
+        "High water holding capacity",
+        "100% natural and organic"
+      ]
+    },
+    cocopeat5kg: {
+      title: "5 kg Cocopeat Block & Cake",
+      sku: "MAAHI-CP-5KG",
+      price: 38,
+      unitLabel: "Kg",
+      thumb: "product-card-media--5kg",
+      tag: "Bulk block",
+      desc: "5 kg block for commercial greenhouses and large pots.",
+      features: [
+        "Expandable up to 75 L",
+        "Optimal pH and EC"
+      ]
+    },
     "5kg": {
       title: "5 kg cocopeat blocks",
       sku: "MAAHI-CB-5KG",
@@ -208,7 +248,9 @@
     try {
       var raw = localStorage.getItem(CATALOG_KEY);
       if (!raw) {
-        localStorage.setItem(CATALOG_KEY, JSON.stringify(DEFAULT_CATALOG));
+        try {
+          localStorage.setItem(CATALOG_KEY, JSON.stringify(DEFAULT_CATALOG));
+        } catch (e) {}
         return JSON.parse(JSON.stringify(DEFAULT_CATALOG));
       }
       return JSON.parse(raw);
@@ -2201,8 +2243,12 @@
 
     // Fetch live Catalog from Supabase
     window.maahiSupabase.fetchCatalog().then(function (dbCatalog) {
-      if (dbCatalog) {
-        localStorage.setItem(CATALOG_KEY, JSON.stringify(dbCatalog));
+      if (dbCatalog && typeof dbCatalog === "object") {
+        try {
+          localStorage.setItem(CATALOG_KEY, JSON.stringify(dbCatalog));
+        } catch (e) {
+          console.warn("Storage quota exceeded in main.js fetchCatalog:", e);
+        }
         CATALOG = dbCatalog;
         renderStorefrontProducts();
         refreshAll();

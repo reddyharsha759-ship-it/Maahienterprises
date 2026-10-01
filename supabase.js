@@ -228,7 +228,7 @@
 
         client
           .from("products")
-          .upsert([row])
+          .upsert([row], { onConflict: "id" })
           .then(function (res) {
             if (res.error) reject(res.error);
             else resolve(true);
